@@ -110,6 +110,7 @@ cat << EOF > /etc/motd
 EOF
 
 mkdir -p /var/log/django-pbx
+chown django-pbx:django-pbx /var/log/django-pbx
 
 apt-get install -y git
 apt-get install -y ngrep sngrep tcpdump rsync
@@ -228,10 +229,13 @@ rm -rf /var/lib/freeswitch/storage/voicemail
 ln -s /home/django-pbx/media/fs/voicemail /var/lib/freeswitch/storage/voicemail
 
 # setup /etc/freeswitch/directory
-mv /etc/freeswitch /etc/freeswitch.orig
-mkdir -p /etc/freeswitch
-cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /etc/freeswitch
+cp -r /etc/freeswitch/* /etc/freeswitch.orig
+cp /home/django-pbx/pbx/switch/resources/templates/conf/freeswitch.xml /etc/freeswitch
+cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
 chown -R django-pbx:django-pbx /etc/freeswitch
+mkdir -p /home/django-pbx/freeswitch
+chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
+
 
 #Sudoers
 #======================
@@ -244,6 +248,15 @@ if [ -f "/etc/sudoers.d/django_pbx_sudo_inc" ]; then
    chown root:root /etc/sudoers.d/django_pbx_sudo_inc
    echo "Django PBX sudo installed OK"
 fi
+
+#Scripts 
+#=====================
+
+cp /home/django-pbx/pbx/pbx/resources/django-pbx/crontab /home/django-pbx
+cp /home/django-pbx/pbx/pbx/resources/root/* /root
+cp /home/django-pbx/pbx/pbx/resources/usr/local/bin/* /usr/local/bin
+cp -r /home/django-pbx/pbx/pbx/resources/usr/share/freeswitch/scripts/* /usr/share/freeswitch/scripts
+
 
 #Set up Django
 #==================
@@ -399,6 +412,16 @@ sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py creates
 #sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
 #sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collectstatic'
 cd $cwd
+
+#Set up passwords etc.
+#======================
+
+sed -i "s/^SECRET_KEY\s=.*/SECRET_KEY ='${system_password}'/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/postgres-insecure-abcdef9876543210\s=.*/${database_password}/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/^DEBUG\s=.*/DEBUG = False/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/^ALLOWED_HOSTS\s=.*/ALLOWED_HOSTS = ['127.0.0.1', '${my_ip}']/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/postgres-insecure-abcdef9876543210\s=.*/${database_password}/g" /usr/share/freeswitch/scripts/resources/db/pbxdb.py
+
 
 read -p "Show database password? " -n 1 -r
 echo ""
