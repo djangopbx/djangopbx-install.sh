@@ -130,26 +130,37 @@ apt-get install -y m4
 apt-get install -y python3-nftables
 apt-get install -y wget
 
+echo "You are about to create a new user called django-pbx, please use a strong, secure password."
+read -p "Press any key to continue " -n 1 -r
+echo ""
 adduser django-pbx
 mkdir -p /home/django-pbx/tmp
 chown django-pbx:django-pbx tmp
 
 mkdir -p /home/django-pbx/media/fs/music/default
 mkdir -p /home/django-pbx/media/fs/recordings
-mkdir -p /home/django-pbx/media/fs/voicemail
+mkdir -p /home/django-pbx/media/fs/voicemail/default
 chown -R django-pbx:django-pbx /home/django-pbx/media
-
-rmdir /var/lib/freeswitch/recordings
-ln -s /home/django-pbx/media/fs/recordings /var/lib/freeswitch/recordings
 
 
 cwd=$(pwd)
 cd /tmp
-
-# clone the IPX Django application
+# clone the DjangoPBX application
 sudo -u django-pbx bash -c 'cd /home/django-pbx && git clone https://github.com/djangopbx/djangopbx.git pbx'
-
 cd $cwd
+
+#Firewall
+#======================
+#Since Buster, Debian has nft dy befault, we now use this rather than the legacy iptables.
+
+cp /home/django-pbx/pbx/pbx/resources/etc/nftables.conf /etc/nftables.conf
+chmod 755 /etc/nftables.conf
+chown root:root /etc/nftables.conf
+
+
+
+#Database
+#======================
 
 apt-get install -y postgresql
 apt-get install -y libpq-dev
@@ -161,6 +172,8 @@ pip3 install psycopg2
 cwd=$(pwd)
 cd /tmp
 
+
+
 #add the databases, users and grant permissions to them
 sudo -u postgres psql -c "CREATE DATABASE djangopbx;";
 sudo -u postgres psql -c "CREATE DATABASE freeswitch;";
@@ -169,7 +182,7 @@ sudo -u postgres psql -c "CREATE ROLE freeswitch WITH SUPERUSER LOGIN PASSWORD '
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE djangopbx to djangopbx;"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to freeswitch;"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to djangopbx;"
-sudo -u postgres psql -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+sudo -u postgres psql -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
 
 
 apt-get install -y curl memcached haveged apt-transport-https
@@ -207,6 +220,12 @@ mv /usr/share/freeswitch/sounds/music/*000 /home/django-pbx/media/fs/music
 mv /usr/share/freeswitch/sounds/music/default/*000 /home/django-pbx/media/fs/music/default
 apt-get remove -y freeswitch-music-default
 chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
+
+# move recordings and voicemail
+rmdir /var/lib/freeswitch/recordings
+ln -s /home/django-pbx/media/fs/recordings /var/lib/freeswitch/recordings
+rm -rf /var/lib/freeswitch/storage/voicemail
+ln -s /home/django-pbx/media/fs/voicemail /var/lib/freeswitch/storage/voicemail
 
 # setup /etc/freeswitch/directory
 mv /etc/freeswitch /etc/freeswitch.orig
@@ -253,24 +272,133 @@ pip3 install lxml
 pip3 install pymemcache
 pip3 install xmltodict
 
+
+#set up webserver
+#================
+
+apt-get install -y nginx
+apt-get install -y uwsgi
+apt-get install -y uwsgi-plugin-python3
+
+#remove the default site
+rm /etc/nginx/sites-enabled/default
+
+#add the static files directory
 mkdir -p /var/www/static
 chown django-pbx:django-pbx /var/www/static
 
+cat << EOF > /etc/uwsgi/apps-available/djangopbx.ini
+[uwsgi]
+plugins-dir = /usr/lib/uwsgi/plugins/
+plugin = python39
+socket = /home/django-pbx/pbx/django-pbx.sock
+uid = django-ipx
+gid = www-data
+chmod-socket = 664
+chdir = /home/django-pbx/pbx/
+wsgi-file = pbx/wsgi.py
+processes = 8
+threads = 4
+stats = 127.0.0.1:9191
+enable-threads = true
+harakiri = 120
+vacuum = true
+
+EOF
+
+ln -s /etc/uwsgi/apps-available/djangopbx.ini /etc/uwsgi/apps-enabled/djangopbx.ini
 
 
-#cwd=$(pwd)
-#cd /tmp
+# get the IP used to talk to the Internet
+my_ip=`ip route get 8.8.8.8 | sed -n '/src/{s/.*src *\([^ ]*\).*/\1/p;q}'`
+# enable DjangoPBX nginx config
+cat << EOF > /etc/nginx/sites-available/djangopbx
+# the upstream component nginx needs to connect to
+upstream django {
+    server unix:///home/django-pbx/pbx/django-pbx.sock; # for a file socket
+    #server 127.0.0.1:8001; # for a web port socket (we will use this first)
+}
+
+server {
+    listen 127.0.0.1:80;
+    server_name _;
+
+    client_max_body_size 80M;
+    client_body_buffer_size 128k;
+
+    location / {
+        include     uwsgi_params;
+        uwsgi_pass  django;
+    }
+
+}
+
+server {
+    listen ${my_ip}:80;
+    server_name _;
+
+    return 301 https://$host$request_uri;
+
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    client_max_body_size 80M;
+    client_body_buffer_size 128k;
+
+}
+
+server {
+    listen ${my_ip}:443 ssl;
+    server_name djangoipx;
+    #ssl                     on;
+    ssl_certificate         /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key     /etc/ssl/private/ssl-cert-snakeoil.key;
+    ssl_protocols           TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers             HIGH:!ADH:!MD5:!aNULL;
+    #ssl_dhparam
+
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log;
+
+    client_max_body_size 80M;
+    client_body_buffer_size 128k;
+
+    location /static {
+        alias /var/www/static;
+    }
+
+    # Finally, send all non media/static requests to the Django server.
+    location / {
+        include     uwsgi_params;
+        uwsgi_pass  django;
+    }
+
+}
+
+EOF
+
+ln -s /etc/nginx/sites-available/djangopbx /etc/nginx/sites-enabled/djangopbx
+
+service nginx stop
+service uwsgi stop
+
+service uwsgi start
+service nginx start
+
+
+cwd=$(pwd)
+cd /tmp
 
 # Perform initial steps on new DjangoPBX Django application
-#sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
-#sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
+echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
+read -p "Press any key to continue " -n 1 -r
+echo ""
+sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
+sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
 #sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py makemigrations'
 #sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
 #sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collectstatic'
-
-#cd $cwd
-
-
+cd $cwd
 
 read -p "Show database password? " -n 1 -r
 echo ""
@@ -288,3 +416,15 @@ fi
 
 echo " "
 echo "Installation Complete."
+echo " "
+echo "Make sure /etc/nftables.conf is correct for you!!"
+echo "By default you must put your IP address in the white list to access ssh on port 22."
+echo " "
+echo "When you are sure that you will NOT LOCK YOURSELF OUT, issue the following command:"
+echo "systemctl enable nftables
+echo " "
+echo "Thankyou for using DjangoPBX"
+echo " "
+
+
+"
