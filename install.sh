@@ -456,6 +456,13 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
 fi
+read -p "Load Menu Defaults? " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py menudefaults'
+fi
+
 
 cd $cwd
 
