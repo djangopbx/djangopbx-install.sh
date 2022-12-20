@@ -408,9 +408,55 @@ read -p "Press any key to continue " -n 1 -r
 echo ""
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
-#sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py makemigrations'
-#sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
-#sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collectstatic'
+sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collectstatic'
+
+read -p "Load Default Access controls? " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrol.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrolnode.json'
+fi
+read -p "Load Default Email Templates? " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch emailtemplate.json'
+fi
+read -p "Load Default Modules data? " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch modules.json'
+fi
+read -p "Load Default SIP profiles? " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofile.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofiledomain.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofilesetting.json'
+fi
+read -p "Load Default Switch Variables? " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch switchvariable.json'
+fi
+read -p "Load Default Musin on Hold data? " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musinonhold.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
+fi
+read -p "Load Default Settings? " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
+fi
+
 cd $cwd
 
 #Set up passwords etc.
@@ -444,10 +490,7 @@ echo "Make sure /etc/nftables.conf is correct for you!!"
 echo "By default you must put your IP address in the white list to access ssh on port 22."
 echo " "
 echo "When you are sure that you will NOT LOCK YOURSELF OUT, issue the following command:"
-echo "systemctl enable nftables
+echo "systemctl enable nftables"
 echo " "
 echo "Thankyou for using DjangoPBX"
 echo " "
-
-
-"
