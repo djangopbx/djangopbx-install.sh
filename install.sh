@@ -91,10 +91,10 @@ then
     system_password=$(dd if=/dev/urandom bs=1 count=20 2>/dev/null | base64)
 fi
 
-cd /root
-echo $database_password
-exit 0
-
+echo "Database Password" >> /root/djangopbx-passwords.txt
+echo $database_password >> /root/djangopbx-passwords.txt
+echo "System Password" >> /root/djangopbx-passwords.txt
+echo $system_password >> /root/djangopbx-passwords.txt
 
 
 cat << EOF > /etc/motd
@@ -243,6 +243,7 @@ then
     apt-get install -y devscripts libspeexdsp-dev libspeex-dev libldns-dev libedit-dev libopus-dev libmemcached-dev
     apt-get install -y libshout3-dev libmpg123-dev libmp3lame-dev yasm nasm libsndfile1-dev libuv1-dev libvpx-dev
     apt-get install -y libavformat-dev libswscale-dev libvlc-dev python3-distutils
+    apt-get install -y uuid-dev
     # Bullseye specific
     apt-get install -y libvpx6 swig4.0
 
@@ -302,6 +303,7 @@ then
     sed -i "s/#say\/mod_say_fr/say\/mod_say_fr/g" build/modules.conf.in
 
     # Configure the build
+    ./bootstrap.sh -j
     ./configure -C --enable-portable-binary --disable-dependency-tracking --prefix=/usr \
     --localstatedir=/var --sysconfdir=/etc --with-openssl --enable-core-pgsql-support
 
@@ -317,10 +319,16 @@ then
     chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
 
     # Bcg_729
+    read -p "Build and install mod_bcg729? " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]
+    then
+    apt-get install -y cmake
     cd /usr/src
     git clone https://github.com/xadhoom/mod_bcg729.git
-    #cd mod_bcg729
-    #make && make install
+    cd mod_bcg729
+    make && make install
+    if
 
     cd $cwd
 fi
@@ -332,6 +340,9 @@ rm -rf /var/lib/freeswitch/storage/voicemail
 ln -s /home/django-pbx/media/fs/voicemail /var/lib/freeswitch/storage/voicemail
 
 # setup /etc/freeswitch/directory
+# just incase it does not exist for any reason
+    mkdir -p /etc/freeswitch
+
 cp -r /etc/freeswitch/* /etc/freeswitch.orig
 cp /home/django-pbx/pbx/switch/resources/templates/conf/freeswitch.xml /etc/freeswitch
 cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
@@ -502,6 +513,15 @@ service uwsgi start
 service nginx start
 
 
+#Set up passwords etc.
+#======================
+
+sed -i "s/^SECRET_KEY.*/SECRET_KEY ='${system_password}'/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/^DEBUG\s=.*/DEBUG = False/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/^ALLOWED_HOSTS\s=.*/ALLOWED_HOSTS = ['127.0.0.1', '${my_ip}']/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /usr/share/freeswitch/scripts/resources/db/pbxdb.py
+
 cwd=$(pwd)
 cd /tmp
 
@@ -566,18 +586,7 @@ then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py menudefaults'
 fi
 
-
 cd $cwd
-
-#Set up passwords etc.
-#======================
-
-sed -i "s/^SECRET_KEY\s=.*/SECRET_KEY ='${system_password}'/g" /home/django-pbx/pbx/pbx/settings.py
-sed -i "s/postgres-insecure-abcdef9876543210\s=.*/${database_password}/g" /home/django-pbx/pbx/pbx/settings.py
-sed -i "s/^DEBUG\s=.*/DEBUG = False/g" /home/django-pbx/pbx/pbx/settings.py
-sed -i "s/^ALLOWED_HOSTS\s=.*/ALLOWED_HOSTS = ['127.0.0.1', '${my_ip}']/g" /home/django-pbx/pbx/pbx/settings.py
-sed -i "s/postgres-insecure-abcdef9876543210\s=.*/${database_password}/g" /usr/share/freeswitch/scripts/resources/db/pbxdb.py
-
 
 read -p "Show database password? " -n 1 -r
 echo ""
