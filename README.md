@@ -11,8 +11,12 @@ Details here: https://www.debian.org/releases/bullseye/installmanual
 ```sh
 mkdir -p /usr/src/djangopbx-install
 cd /usr/src/djangopbx-install
-wget -O - https://raw.githubusercontent.com/djangopbx/djangopbx-install.sh/master/install.sh
-cd /usr/src/djangopbx-install && ./install.sh
+wget https://raw.githubusercontent.com/djangopbx/djangopbx-install.sh/master/install.sh
+```
+Make any modifications to the [config] section of the script.
+The run it:
+```sh
+./install.sh
 ```
 ## Under development
 The code in this repository is not yet ready for download or testing.
