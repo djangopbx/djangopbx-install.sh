@@ -32,9 +32,18 @@
 #                         Configuration Section                              #
 ##############################################################################
 
+#  Passwords
 database_password=random
 system_password=random
-signalwire_token=
+
+# Freeswitch method can be src or pkg
+#   if pkg is seclected then you must frovide a signalwire token.
+freeswitch_method=src
+signalwire_token=None
+
+# Software versions
+freeswitch_version=1.10.8
+sofia_version=1.13.10
 
 install_nagios_nrpe=no
 
@@ -173,8 +182,6 @@ pip3 install psycopg2
 cwd=$(pwd)
 cd /tmp
 
-
-
 #add the databases, users and grant permissions to them
 sudo -u postgres psql -c "CREATE DATABASE djangopbx;";
 sudo -u postgres psql -c "CREATE DATABASE freeswitch;";
@@ -185,42 +192,138 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to freeswi
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to djangopbx;"
 sudo -u postgres psql -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
 
+cd $cwd
 
 apt-get install -y curl memcached haveged apt-transport-https
 
-wget --http-user=signalwire --http-password=$signalwire_token -O /usr/share/keyrings/signalwire-freeswitch-repo.gpg https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg
-echo "machine freeswitch.signalwire.com login signalwire password $signalwire_token" > /etc/apt/auth.conf
-echo "deb [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ `lsb_release -sc` main" > /etc/apt/sources.list.d/freeswitch.list
-echo "deb-src [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ `lsb_release -sc` main" >> /etc/apt/sources.list.d/freeswitch.list
 
-apt-get update
-apt-get install -y gdb ntp
-apt-get install -y freeswitch-meta-bare freeswitch-conf-vanilla freeswitch-mod-commands freeswitch-mod-console freeswitch-mod-logfile
-apt-get install -y freeswitch-lang-en freeswitch-mod-say-en freeswitch-sounds-en-us-callie
-apt-get install -y freeswitch-sounds-es-ar-mario freeswitch-mod-say-es freeswitch-mod-say-es-ar
-apt-get install -y freeswitch-sounds-fr-ca-june freeswitch-mod-say-fr
-apt-get install -y freeswitch-mod-enum freeswitch-mod-cdr-csv freeswitch-mod-event-socket freeswitch-mod-sofia freeswitch-mod-sofia-dbg freeswitch-mod-loopback
-apt-get install -y freeswitch-mod-conference freeswitch-mod-db freeswitch-mod-dptools freeswitch-mod-expr freeswitch-mod-fifo freeswitch-mod-httapi
-apt-get install -y freeswitch-mod-hash freeswitch-mod-esl freeswitch-mod-esf freeswitch-mod-fsv freeswitch-mod-valet-parking freeswitch-mod-dialplan-xml freeswitch-dbg
-apt-get install -y freeswitch-mod-sndfile freeswitch-mod-native-file freeswitch-mod-local-stream freeswitch-mod-tone-stream freeswitch-meta-mod-say
-apt-get install -y freeswitch-mod-python3
-apt-get install -y freeswitch-mod-xml-cdr freeswitch-mod-verto freeswitch-mod-callcenter freeswitch-mod-rtc freeswitch-mod-png freeswitch-mod-json-cdr freeswitch-mod-shout
-apt-get install -y freeswitch-mod-sms freeswitch-mod-sms-dbg freeswitch-mod-cidlookup freeswitch-mod-memcache
-apt-get install -y freeswitch-mod-imagick freeswitch-mod-tts-commandline freeswitch-mod-directory
-apt-get install -y freeswitch-mod-av freeswitch-mod-flite freeswitch-mod-distributor freeswitch-meta-codecs
-apt-get install -y freeswitch-mod-pgsql
-apt-get install -y freeswitch-mod-xml-curl
-apt-get install -y freeswitch-music-default
-apt-get install -y libyuv-dev
+if [[ $freeswitch_method == "pkg" ]]
+then
 
-# make sure that postgresql is started before starting freeswitch
-sed -i /lib/systemd/system/freeswitch.service -e s:'local-fs.target:local-fs.target postgresql.service:'
+    wget --http-user=signalwire --http-password=$signalwire_token -O /usr/share/keyrings/signalwire-freeswitch-repo.gpg https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg
+    echo "machine freeswitch.signalwire.com login signalwire password $signalwire_token" > /etc/apt/auth.conf
+    echo "deb [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ `lsb_release -sc` main" > /etc/apt/sources.list.d/freeswitch.list
+    echo "deb-src [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ `lsb_release -sc` main" >> /etc/apt/sources.list.d/freeswitch.list
 
-# remove the music package to protect music on hold from package updates
-mv /usr/share/freeswitch/sounds/music/*000 /home/django-pbx/media/fs/music
-mv /usr/share/freeswitch/sounds/music/default/*000 /home/django-pbx/media/fs/music/default
-apt-get remove -y freeswitch-music-default
-chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
+    apt-get update
+    apt-get install -y gdb ntp
+    apt-get install -y freeswitch-meta-bare freeswitch-conf-vanilla freeswitch-mod-commands freeswitch-mod-console freeswitch-mod-logfile
+    apt-get install -y freeswitch-lang-en freeswitch-mod-say-en freeswitch-sounds-en-us-callie
+    apt-get install -y freeswitch-sounds-es-ar-mario freeswitch-mod-say-es freeswitch-mod-say-es-ar
+    apt-get install -y freeswitch-sounds-fr-ca-june freeswitch-mod-say-fr
+    apt-get install -y freeswitch-mod-enum freeswitch-mod-cdr-csv freeswitch-mod-event-socket freeswitch-mod-sofia freeswitch-mod-sofia-dbg freeswitch-mod-loopback
+    apt-get install -y freeswitch-mod-conference freeswitch-mod-db freeswitch-mod-dptools freeswitch-mod-expr freeswitch-mod-fifo freeswitch-mod-httapi
+    apt-get install -y freeswitch-mod-hash freeswitch-mod-esl freeswitch-mod-esf freeswitch-mod-fsv freeswitch-mod-valet-parking freeswitch-mod-dialplan-xml freeswitch-dbg
+    apt-get install -y freeswitch-mod-sndfile freeswitch-mod-native-file freeswitch-mod-local-stream freeswitch-mod-tone-stream freeswitch-meta-mod-say
+    apt-get install -y freeswitch-mod-python3
+    apt-get install -y freeswitch-mod-xml-cdr freeswitch-mod-verto freeswitch-mod-callcenter freeswitch-mod-rtc freeswitch-mod-png freeswitch-mod-json-cdr freeswitch-mod-shout
+    apt-get install -y freeswitch-mod-sms freeswitch-mod-sms-dbg freeswitch-mod-cidlookup freeswitch-mod-memcache
+    apt-get install -y freeswitch-mod-imagick freeswitch-mod-tts-commandline freeswitch-mod-directory
+    apt-get install -y freeswitch-mod-av freeswitch-mod-flite freeswitch-mod-distributor freeswitch-meta-codecs
+    apt-get install -y freeswitch-mod-pgsql
+    apt-get install -y freeswitch-mod-xml-curl
+    apt-get install -y freeswitch-music-default
+    apt-get install -y libyuv-dev
+
+    # make sure that postgresql is started before starting freeswitch
+    sed -i /lib/systemd/system/freeswitch.service -e s:'local-fs.target:local-fs.target postgresql.service:'
+
+    # remove the music package to protect music on hold from package updates
+    mv /usr/share/freeswitch/sounds/music/*000 /home/django-pbx/media/fs/music
+    mv /usr/share/freeswitch/sounds/music/default/*000 /home/django-pbx/media/fs/music/default
+    apt-get remove -y freeswitch-music-default
+    chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
+fi
+
+if [[ $freeswitch_method == "src" ]]
+then
+    apt-get install -y autoconf automake devscripts g++ git-core libncurses5-dev libtool make libjpeg-dev
+    apt-get install -y pkg-config flac  libgdbm-dev libdb-dev gettext equivs mlocate dpkg-dev libpq-dev
+    apt-get install -y liblua5.2-dev libtiff5-dev libperl-dev libcurl4-openssl-dev libsqlite3-dev libpcre3-dev
+    apt-get install -y devscripts libspeexdsp-dev libspeex-dev libldns-dev libedit-dev libopus-dev libmemcached-dev
+    apt-get install -y libshout3-dev libmpg123-dev libmp3lame-dev yasm nasm libsndfile1-dev libuv1-dev libvpx-dev
+    apt-get install -y libavformat-dev libswscale-dev libvlc-dev python3-distutils
+    # Bullseye specific
+    apt-get install -y libvpx6 swig4.0
+
+    cwd=$(pwd)
+
+    # sofia-sip
+    cd /usr/src
+    #git clone https://github.com/freeswitch/sofia-sip.git sofia-sip
+    wget https://github.com/freeswitch/sofia-sip/archive/refs/tags/v${sofia_version}.tar.gz
+    tar -xvf v${sofia_version}.tar.gz
+    rm -R sofia-sip
+    mv sofia-sip-$sofia_version sofia-sip
+    cd sofia-sip
+    sh autogen.sh
+    ./configure
+    make
+    make install
+
+    # spandsp
+    cd /usr/src
+    git clone https://github.com/freeswitch/spandsp.git spandsp
+    cd spandsp
+    sh autogen.sh
+    ./configure
+    make
+    make install
+    ldconfig
+
+    # Freeswitch
+    cd /usr/src
+    wget https://github.com/signalwire/freeswitch/archive/refs/tags/v${freeswitch_version}.tar.gz
+    tar -xvf v${freeswitch_version}.tar.gz
+    rm -R freeswitch
+    mv freeswitch-$freeswitch_version freeswitch
+    cd freeswitch
+
+    # disable mod_signalwire, mod_skinny, mod_verto and mod_lua from building
+    sed -i "s/applications\/mod_signalwire/#applications\/mod_signalwire/g" build/modules.conf.in
+    sed -i "s/endpoints\/mod_skinny/#endpoints\/mod_skinny/g" build/modules.conf.in
+    sed -i "s/endpoints\/mod_verto/#endpoints\/mod_verto/g" build/modules.conf.in
+    sed -i "s/languages\/mod_lua/languages\/mod_lua/g" build/modules.conf.in
+
+    # enable some other modules that are disabled by default
+    sed -i "s/#applications\/mod_callcenter/applications\/mod_callcenter/g" build/modules.conf.in
+    sed -i "s/#applications\/mod_cidlookup/applications\/mod_cidlookup/g" build/modules.conf.in
+    sed -i "s/#applications\/mod_memcache/applications\/mod_memcache/g" build/modules.conf.in
+    sed -i "s/#applications\/mod_curl/applications\/mod_curl/g" build/modules.conf.in
+    sed -i "s/#applications\/mod_nibblebill/applications\/mod_nibblebill/g" build/modules.conf.in
+
+    sed -i "s/#languages\/mod_python3/languages\/mod_python3/g" build/modules.conf.in
+
+    sed -i "s/#xml_int\/mod_xml_curl/xml_int\/mod_xml_curl/g" build/modules.conf.in
+
+    sed -i "s/#formats\/mod_shout/formats\/mod_shout/g" build/modules.conf.in
+
+    sed -i "s/#say\/mod_say_es/say\/mod_say_es/g" build/modules.conf.in
+    sed -i "s/#say\/mod_say_fr/say\/mod_say_fr/g" build/modules.conf.in
+
+    # Configure the build
+    ./configure -C --enable-portable-binary --disable-dependency-tracking --prefix=/usr \
+    --localstatedir=/var --sysconfdir=/etc --with-openssl --enable-core-pgsql-support
+
+    # compile and install
+    make
+    make install
+    make sounds-install moh-install
+    make hd-sounds-install hd-moh-install
+    make cd-sounds-install cd-moh-install
+
+    #move the music into music/default directory
+    mv /usr/share/freeswitch/sounds/music/*000 /home/django-pbx/media/fs/music/default
+    chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
+
+    # Bcg_729
+    cd /usr/src
+    git clone https://github.com/xadhoom/mod_bcg729.git
+    #cd mod_bcg729
+    #make && make install
+
+    cd $cwd
+fi
 
 # move recordings and voicemail
 rmdir /var/lib/freeswitch/recordings
