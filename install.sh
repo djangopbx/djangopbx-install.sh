@@ -350,6 +350,86 @@ chown -R django-pbx:django-pbx /etc/freeswitch
 mkdir -p /home/django-pbx/freeswitch
 chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
 
+cat << EOF > /lib/systemd/system/freeswitch.service
+;;;;; Author: Travis Cross <tc@traviscross.com>
+
+[Unit]
+Description=freeswitch
+Wants=network-online.target
+Requires=network.target local-fs.target postgresql.service
+After=network.target network-online.target local-fs.target postgresql.service
+
+[Service]
+; service
+Type=forking
+PIDFile=/run/freeswitch/freeswitch.pid
+Environment="DAEMON_OPTS=-nonat"
+Environment="USER=django-pbx"
+Environment="GROUP=django-pbx"
+EnvironmentFile=-/etc/default/freeswitch
+ExecStartPre=/bin/mkdir -p /var/run/freeswitch/
+ExecStartPre=/bin/chown -R django-pbx:django-pbx /var/run/freeswitch/
+ExecStartPre=/bin/chown -R ${USER}:${GROUP} /var/lib/freeswitch /var/log/freeswitch /etc/freeswitch /usr/share/freeswitch /var/run/freeswitch
+ExecStart=/usr/bin/freeswitch -u ${USER} -g ${GROUP} -ncwait ${DAEMON_OPTS}
+TimeoutSec=45s
+Restart=always
+; exec
+;User=${USER}
+;Group=${GROUP}
+LimitCORE=infinity
+LimitNOFILE=100000
+LimitNPROC=60000
+LimitSTACK=250000
+LimitRTPRIO=infinity
+LimitRTTIME=infinity
+IOSchedulingClass=realtime
+IOSchedulingPriority=2
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority=89
+UMask=0007
+NoNewPrivileges=false
+
+; alternatives which you can enforce by placing a unit drop-in into
+; /etc/systemd/system/freeswitch.service.d/*.conf:
+;
+; User=freeswitch
+; Group=freeswitch
+; ExecStart=
+; ExecStart=/usr/bin/freeswitch -ncwait -nonat -rp
+;
+; empty ExecStart is required to flush the list.
+;
+; if your filesystem supports extended attributes, execute
+;   setcap 'cap_net_bind_service,cap_sys_nice=+ep' /usr/bin/freeswitch
+; this will also allow socket binding on low ports
+;
+; otherwise, remove the -rp option from ExecStart and
+; add these lines to give real-time priority to the process:
+;
+; PermissionsStartOnly=true
+; ExecStartPost=/bin/chrt -f -p 1 $MAINPID
+;
+; execute "systemctl daemon-reload" after editing the unit files.
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
+
+read -p "Move FreeSWITCH Sqlite files to RAM disk? " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+
+    mkdir -p /var/lib/freeswitch/db
+    chmod 777 /var/lib/freeswitch/db
+    chown -R django-pbx:django-pbx /var/lib/freeswitch/db
+    echo "# DjangoPBX for Freeswitch DB" >> /etc/fstab
+    echo "tmpfs /var/lib/freeswitch/db tmpfs defaults 0 0" >> /etc/fstab
+    mount -t tmpfs -o size=64m fsramdisk /var/lib/freeswitch/db
+
+if
+
 
 #Sudoers
 #======================
@@ -601,6 +681,10 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     echo $system_password
 fi
+
+systemctl daemon-reload
+systemctl start freeswitch
+systemctl enable freeswitch
 
 echo " "
 echo "Installation Complete."
