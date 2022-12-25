@@ -36,6 +36,9 @@
 database_password=random
 system_password=random
 
+# Domain name, use leading dot for wildcard
+domain_name=.djangopbx.com
+
 # Freeswitch method can be src or pkg
 #   if pkg is seclected then you must frovide a signalwire token.
 freeswitch_method=src
@@ -599,7 +602,7 @@ service nginx start
 sed -i "s/^SECRET_KEY.*/SECRET_KEY ='${system_password}'/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/^DEBUG\s=.*/DEBUG = False/g" /home/django-pbx/pbx/pbx/settings.py
-sed -i "s/^ALLOWED_HOSTS\s=.*/ALLOWED_HOSTS = ['127.0.0.1', '${my_ip}']/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/^ALLOWED_HOSTS\s=.*/ALLOWED_HOSTS = ['127.0.0.1', '${my_ip}', '${domain_name}']/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /usr/share/freeswitch/scripts/resources/db/pbxdb.py
 
 cwd=$(pwd)
