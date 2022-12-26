@@ -51,7 +51,7 @@ sofia_version=1.13.10
 install_nagios_nrpe=no
 
 ########################### Configuration End ################################
-{
+
 read -p "Install DjangoPBX Are you sure? " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -85,13 +85,13 @@ fi
 if [[ $database_password == "random" ]]
 then
     echo "Generating random database pasword... "
-    database_password=$(dd if=/dev/urandom bs=1 count=20 2>/dev/null | base64)
+    database_password=$(cat /proc/sys/kernel/random/uuid | md5sum | head -c 20)
 fi
 
 if [[ $system_password == "random" ]]
 then
     echo "Generating random system pasword... "
-    system_password=$(dd if=/dev/urandom bs=1 count=20 2>/dev/null | base64)
+    system_password=$(cat /proc/sys/kernel/random/uuid)
 fi
 
 echo "Database Password" >> /root/djangopbx-passwords.txt
@@ -324,7 +324,7 @@ then
     # Bcg_729
     read -p "Build and install mod_bcg729? " -n 1 -r
     echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]
+    if [[ $REPLY =~ ^[Yy]$ ]]
     then
     apt-get install -y cmake
     cd /usr/src
@@ -358,7 +358,7 @@ mkdir -p /home/django-pbx/freeswitch
 cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
 chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
 
-cat << EOF > /lib/systemd/system/freeswitch.service
+cat << \EOF > /lib/systemd/system/freeswitch.service
 ;;;;; Author: Travis Cross <tc@traviscross.com>
 
 [Unit]
@@ -426,7 +426,7 @@ EOF
 
 read -p "Move FreeSWITCH Sqlite files to RAM disk? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
 
     mkdir -p /var/lib/freeswitch/db
@@ -454,7 +454,7 @@ fi
 #Scripts 
 #=====================
 
-cp /home/django-pbx/pbx/pbx/resources/django-pbx/crontab /home/django-pbx
+cp /home/django-pbx/pbx/pbx/resources/home/django-pbx/crontab /home/django-pbx
 cp /home/django-pbx/pbx/pbx/resources/root/* /root
 cp /home/django-pbx/pbx/pbx/resources/usr/local/bin/* /usr/local/bin
 cp -r /home/django-pbx/pbx/pbx/resources/usr/share/freeswitch/scripts/* /usr/share/freeswitch/scripts
@@ -507,7 +507,7 @@ cat << EOF > /etc/uwsgi/apps-available/djangopbx.ini
 plugins-dir = /usr/lib/uwsgi/plugins/
 plugin = python39
 socket = /home/django-pbx/pbx/django-pbx.sock
-uid = django-ipx
+uid = django-pbx
 gid = www-data
 chmod-socket = 664
 chdir = /home/django-pbx/pbx/
@@ -625,26 +625,26 @@ sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collect
 
 read -p "Load Default Access controls? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrol.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrolnode.json'
 fi
 read -p "Load Default Email Templates? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch emailtemplate.json'
 fi
 read -p "Load Default Modules data? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch modules.json'
 fi
 read -p "Load Default SIP profiles? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofile.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofiledomain.json'
@@ -652,26 +652,26 @@ then
 fi
 read -p "Load Default Switch Variables? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch switchvariable.json'
 fi
 read -p "Load Default Musin on Hold data? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musinonhold.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
 fi
 read -p "Load Default Settings? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
 fi
 read -p "Load Menu Defaults? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py menudefaults'
 fi
@@ -680,14 +680,14 @@ cd $cwd
 
 read -p "Show database password? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     echo $database_password
 fi
 
 read -p "Show system password? " -n 1 -r
 echo ""
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
     echo $system_password
 fi
@@ -707,4 +707,3 @@ echo "systemctl enable nftables"
 echo " "
 echo "Thankyou for using DjangoPBX"
 echo " "
-} 2>>/root/install-errors.txt
