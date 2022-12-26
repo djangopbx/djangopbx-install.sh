@@ -51,7 +51,7 @@ sofia_version=1.13.10
 install_nagios_nrpe=no
 
 ########################### Configuration End ################################
-
+{
 read -p "Install DjangoPBX Are you sure? " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -148,11 +148,11 @@ read -p "Press any key to continue " -n 1 -r
 echo ""
 adduser django-pbx
 mkdir -p /home/django-pbx/tmp
-chown django-pbx:django-pbx tmp
+chown django-pbx:django-pbx /home/django-pbx/tmp
 
 mkdir -p /home/django-pbx/media/fs/music/default
 mkdir -p /home/django-pbx/media/fs/recordings
-mkdir -p /home/django-pbx/media/fs/voicemail/default
+mkdir -p /home/django-pbx/media/fs/voicemail
 chown -R django-pbx:django-pbx /home/django-pbx/media
 
 
@@ -339,18 +339,23 @@ fi
 # move recordings and voicemail
 rmdir /var/lib/freeswitch/recordings
 ln -s /home/django-pbx/media/fs/recordings /var/lib/freeswitch/recordings
+mkdir -p /var/lib/freeswitch/storage
 rm -rf /var/lib/freeswitch/storage/voicemail
 ln -s /home/django-pbx/media/fs/voicemail /var/lib/freeswitch/storage/voicemail
+mkdir -p /var/lib/freeswitch/storage/voicemail/default
+chown django-pbx:django-pbx /var/lib/freeswitch/storage/voicemail/default
+
 
 # setup /etc/freeswitch/directory
 # just incase it does not exist for any reason
     mkdir -p /etc/freeswitch
 
+mkdir -p /etc/freeswitch.orig
 cp -r /etc/freeswitch/* /etc/freeswitch.orig
 cp /home/django-pbx/pbx/switch/resources/templates/conf/freeswitch.xml /etc/freeswitch
-cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
 chown -R django-pbx:django-pbx /etc/freeswitch
 mkdir -p /home/django-pbx/freeswitch
+cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
 chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
 
 cat << EOF > /lib/systemd/system/freeswitch.service
@@ -431,7 +436,7 @@ then
     echo "tmpfs /var/lib/freeswitch/db tmpfs defaults 0 0" >> /etc/fstab
     mount -t tmpfs -o size=64m fsramdisk /var/lib/freeswitch/db
 
-if
+fi
 
 
 #Sudoers
@@ -702,3 +707,4 @@ echo "systemctl enable nftables"
 echo " "
 echo "Thankyou for using DjangoPBX"
 echo " "
+} 2>>/root/install-errors.txt
