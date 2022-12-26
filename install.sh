@@ -331,7 +331,7 @@ then
     git clone https://github.com/xadhoom/mod_bcg729.git
     cd mod_bcg729
     make && make install
-    if
+    fi
 
     cd $cwd
 fi
