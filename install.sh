@@ -604,6 +604,8 @@ sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /home/djang
 sed -i "s/^DEBUG\s=.*/DEBUG = False/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/^ALLOWED_HOSTS\s=.*/ALLOWED_HOSTS = ['127.0.0.1', '${my_ip}', '${domain_name}']/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /usr/share/freeswitch/scripts/resources/db/pbxdb.py
+sed -i "s/XXXXXXXX/${database_password}/g" /root/pbx-backup.sh
+sed -i "s/XXXXXXXX/${database_password}/g" /root/pbx-restore.sh
 
 cwd=$(pwd)
 cd /tmp
