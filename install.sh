@@ -376,7 +376,6 @@ Environment="USER=django-pbx"
 Environment="GROUP=django-pbx"
 EnvironmentFile=-/etc/default/freeswitch
 ExecStartPre=/bin/mkdir -p /var/run/freeswitch/
-ExecStartPre=/bin/chown -R django-pbx:django-pbx /var/run/freeswitch/
 ExecStartPre=/bin/chown -R ${USER}:${GROUP} /var/lib/freeswitch /var/log/freeswitch /etc/freeswitch /usr/share/freeswitch /var/run/freeswitch
 ExecStart=/usr/bin/freeswitch -u ${USER} -g ${GROUP} -ncwait ${DAEMON_OPTS}
 TimeoutSec=45s
@@ -578,6 +577,10 @@ server {
     client_max_body_size 80M;
     client_body_buffer_size 128k;
 
+    location /favicon.ico {
+        alias /var/www/static/favicon.ico;
+    }
+
     location /static {
         alias /var/www/static;
     }
@@ -596,10 +599,6 @@ ln -s /etc/nginx/sites-available/djangopbx /etc/nginx/sites-enabled/djangopbx
 
 service nginx stop
 service uwsgi stop
-
-service uwsgi start
-service nginx start
-
 
 #Set up passwords etc.
 #======================
@@ -695,6 +694,9 @@ fi
 systemctl daemon-reload
 systemctl start freeswitch
 systemctl enable freeswitch
+
+service uwsgi start
+service nginx start
 
 echo " "
 echo "Installation Complete."
