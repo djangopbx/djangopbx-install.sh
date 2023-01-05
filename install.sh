@@ -162,8 +162,10 @@ cd /tmp
 sudo -u django-pbx bash -c 'cd /home/django-pbx && git clone https://github.com/djangopbx/djangopbx.git pbx'
 cd $cwd
 
-#Firewall
-#======================
+
+###############################################
+# Firewall
+###############################################
 #Since Buster, Debian has nft dy befault, we now use this rather than the legacy iptables.
 
 cp /home/django-pbx/pbx/pbx/resources/etc/nftables.conf /etc/nftables.conf
@@ -171,9 +173,9 @@ chmod 755 /etc/nftables.conf
 chown root:root /etc/nftables.conf
 
 
-
-#Database
-#======================
+###############################################
+# Database
+###############################################
 
 apt-get install -y postgresql
 apt-get install -y libpq-dev
@@ -438,8 +440,9 @@ then
 fi
 
 
-#Sudoers
-#======================
+###############################################
+# Sudoers
+###############################################
 
 visudo -c -q -f /home/django-pbx/pbx/pbx/resources/etc/sudoers.d/django_pbx_sudo_inc && \
 cp /home/django-pbx/pbx/pbx/resources/etc/sudoers.d/django_pbx_sudo_inc /etc/sudoers.d/django_pbx_sudo_inc
@@ -450,8 +453,10 @@ if [ -f "/etc/sudoers.d/django_pbx_sudo_inc" ]; then
    echo "Django PBX sudo installed OK"
 fi
 
-#Scripts 
-#=====================
+
+###############################################
+# Scripts
+###############################################
 
 cp /home/django-pbx/pbx/pbx/resources/home/django-pbx/crontab /home/django-pbx
 cp /home/django-pbx/pbx/pbx/resources/root/* /root
@@ -459,8 +464,9 @@ cp /home/django-pbx/pbx/pbx/resources/usr/local/bin/* /usr/local/bin
 cp -r /home/django-pbx/pbx/pbx/resources/usr/share/freeswitch/scripts/* /usr/share/freeswitch/scripts
 
 
-#Set up Django
-#==================
+###############################################
+# Set up Django
+###############################################
 
 pip3 install Django
 pip3 install django-static-fontawesome
@@ -487,8 +493,9 @@ pip3 install pymemcache
 pip3 install xmltodict
 
 
-#set up webserver
-#================
+###############################################
+# Set up Webserver
+###############################################
 
 apt-get install -y nginx
 apt-get install -y uwsgi
@@ -600,8 +607,10 @@ ln -s /etc/nginx/sites-available/djangopbx /etc/nginx/sites-enabled/djangopbx
 service nginx stop
 service uwsgi stop
 
-#Set up passwords etc.
-#======================
+
+###############################################
+# Set up passwords etc.
+###############################################
 
 sed -i "s/^SECRET_KEY.*/SECRET_KEY ='${system_password}'/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /home/django-pbx/pbx/pbx/settings.py
@@ -622,6 +631,9 @@ sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collectstatic'
 
+###############################################
+# Basic Data loading
+###############################################
 read -p "Load Default Access controls? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
@@ -629,18 +641,21 @@ then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrol.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrolnode.json'
 fi
+
 read -p "Load Default Email Templates? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch emailtemplate.json'
 fi
+
 read -p "Load Default Modules data? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch modules.json'
 fi
+
 read -p "Load Default SIP profiles? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
@@ -649,12 +664,14 @@ then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofiledomain.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofilesetting.json'
 fi
+
 read -p "Load Default Switch Variables? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch switchvariable.json'
 fi
+
 read -p "Load Default Musin on Hold data? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
@@ -662,12 +679,30 @@ then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musicnonhold.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
 fi
+
+read -p "Load Conference Settings? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontrols.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontroldetails.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofiles.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofileparams.json'
+fi
+
+###############################################
+# Default Settings
+###############################################
 read -p "Load Default Settings? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
 fi
+
+###############################################
+# Menu Defaults
+###############################################
 read -p "Load Menu Defaults? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
