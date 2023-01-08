@@ -220,12 +220,14 @@ then
     apt-get install -y freeswitch-mod-conference freeswitch-mod-db freeswitch-mod-dptools freeswitch-mod-expr freeswitch-mod-fifo freeswitch-mod-httapi
     apt-get install -y freeswitch-mod-hash freeswitch-mod-esl freeswitch-mod-esf freeswitch-mod-fsv freeswitch-mod-valet-parking freeswitch-mod-dialplan-xml freeswitch-dbg
     apt-get install -y freeswitch-mod-sndfile freeswitch-mod-native-file freeswitch-mod-local-stream freeswitch-mod-tone-stream freeswitch-meta-mod-say
+    apt-get install -y freeswitch-mod-lua
     apt-get install -y freeswitch-mod-python3
     apt-get install -y freeswitch-mod-xml-cdr freeswitch-mod-verto freeswitch-mod-callcenter freeswitch-mod-rtc freeswitch-mod-png freeswitch-mod-json-cdr freeswitch-mod-shout
     apt-get install -y freeswitch-mod-sms freeswitch-mod-sms-dbg freeswitch-mod-cidlookup freeswitch-mod-memcache
     apt-get install -y freeswitch-mod-imagick freeswitch-mod-tts-commandline freeswitch-mod-directory
     apt-get install -y freeswitch-mod-av freeswitch-mod-flite freeswitch-mod-distributor freeswitch-meta-codecs
     apt-get install -y freeswitch-mod-pgsql
+    apt-get install -y freeswitch-mod-curl
     apt-get install -y freeswitch-mod-xml-curl
     apt-get install -y freeswitch-music-default
     apt-get install -y libyuv-dev
@@ -285,11 +287,10 @@ then
     mv freeswitch-$freeswitch_version freeswitch
     cd freeswitch
 
-    # disable mod_signalwire, mod_skinny, mod_verto and mod_lua from building
+    # disable mod_signalwire, mod_skinny, and mod_verto from building
     sed -i "s/applications\/mod_signalwire/#applications\/mod_signalwire/g" build/modules.conf.in
     sed -i "s/endpoints\/mod_skinny/#endpoints\/mod_skinny/g" build/modules.conf.in
     sed -i "s/endpoints\/mod_verto/#endpoints\/mod_verto/g" build/modules.conf.in
-    sed -i "s/languages\/mod_lua/languages\/mod_lua/g" build/modules.conf.in
 
     # enable some other modules that are disabled by default
     sed -i "s/#applications\/mod_callcenter/applications\/mod_callcenter/g" build/modules.conf.in
@@ -616,7 +617,6 @@ sed -i "s/^SECRET_KEY.*/SECRET_KEY ='${system_password}'/g" /home/django-pbx/pbx
 sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/^DEBUG\s=.*/DEBUG = False/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/^ALLOWED_HOSTS\s=.*/ALLOWED_HOSTS = ['127.0.0.1', '${my_ip}', '${domain_name}']/g" /home/django-pbx/pbx/pbx/settings.py
-sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /usr/share/freeswitch/scripts/resources/db/pbxdb.py
 sed -i "s/XXXXXXXX/${database_password}/g" /root/pbx-backup.sh
 sed -i "s/XXXXXXXX/${database_password}/g" /root/pbx-restore.sh
 
