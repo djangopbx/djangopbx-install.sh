@@ -171,7 +171,15 @@ cd $cwd
 cp /home/django-pbx/pbx/pbx/resources/etc/nftables.conf /etc/nftables.conf
 chmod 755 /etc/nftables.conf
 chown root:root /etc/nftables.conf
-
+echo "A default firewall configuration has been installed."
+echo "It is strongly recommended that you add your public IP accress to one"
+echo "the white-list sets.  They currently contain place holder RFC1918 addresses."
+read -p "Edit nftables.conf now? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+nano /etc/nftables.conf
+fi
 
 ###############################################
 # Database
@@ -628,6 +636,7 @@ cd /tmp
 
 # Perform initial steps on new DjangoPBX Django application
 echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
+echo "Hint: Use the email format for the username e.g. <user@domain.com>."
 read -p "Press any key to continue " -n 1 -r
 echo ""
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
