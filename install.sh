@@ -351,7 +351,7 @@ chown django-pbx:django-pbx /var/lib/freeswitch/storage/voicemail/default
 
 # setup /etc/freeswitch/directory
 # just incase it does not exist for any reason
-    mkdir -p /etc/freeswitch
+mkdir -p /etc/freeswitch
 
 mkdir -p /etc/freeswitch.orig
 cp -r /etc/freeswitch/* /etc/freeswitch.orig
@@ -359,7 +359,9 @@ cp /home/django-pbx/pbx/switch/resources/templates/conf/freeswitch.xml /etc/free
 chown -R django-pbx:django-pbx /etc/freeswitch
 mkdir -p /home/django-pbx/freeswitch
 cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
+
 chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
+
 
 cat << \EOF > /lib/systemd/system/freeswitch.service
 ;;;;; Author: Travis Cross <tc@traviscross.com>
@@ -492,6 +494,7 @@ pip3 install psutil
 pip3 install lxml
 pip3 install pymemcache
 pip3 install xmltodict
+pip3 install regex
 
 
 ###############################################
