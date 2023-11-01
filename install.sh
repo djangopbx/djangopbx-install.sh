@@ -688,7 +688,7 @@ read -p "Load Default Musin on Hold data? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musicnonhold.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musiconhold.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
 fi
 
@@ -753,6 +753,15 @@ echo "By default you must put your IP address in the white list to access ssh on
 echo " "
 echo "When you are sure that you will NOT LOCK YOURSELF OUT, issue the following command:"
 echo "systemctl enable nftables"
+echo " "
+echo "Once logged in on the Web interface as Superuser, the first thing you should do is:"
+echo "Go to Advanced->Admin and under Tenants click Domains +Add"
+echo "Enter your domain details and click save."
+echo "Now under Tenants go to profiles, on the Filter By Domain click All"
+echo "You should now see your User Id, click on it to edit"
+echo "and choose your newly added domain from the Domain drop-down.  Now click Save."
+echo "Now log out (choose PORTAL from the top bar and then Home->Logout)"
+echo "Log back in and you should be good to go..."
 echo " "
 echo "Thankyou for using DjangoPBX"
 echo " "
