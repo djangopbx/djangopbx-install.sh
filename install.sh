@@ -753,6 +753,7 @@ echo "By default you must put your IP address in the white list to access ssh on
 echo " "
 echo "When you are sure that you will NOT LOCK YOURSELF OUT, issue the following command:"
 echo "systemctl enable nftables"
+echo "Then reboot"
 echo " "
 echo "Once logged in on the Web interface as Superuser, the first thing you should do is:"
 echo "Go to Advanced->Admin and under Tenants click Domains +Add"
