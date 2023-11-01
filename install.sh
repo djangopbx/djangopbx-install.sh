@@ -45,8 +45,8 @@ freeswitch_method=src
 signalwire_token=None
 
 # Software versions
-freeswitch_version=1.10.8
-sofia_version=1.13.10
+freeswitch_version=1.10.10
+sofia_version=1.13.16
 
 install_nagios_nrpe=no
 
