@@ -160,6 +160,7 @@ cwd=$(pwd)
 cd /tmp
 # clone the DjangoPBX application
 sudo -u django-pbx bash -c 'cd /home/django-pbx && git clone https://github.com/djangopbx/djangopbx.git pbx'
+sudo -u django-pbx bash -c 'cd /home/django-pbx && git config pull.rebase false'
 cd $cwd
 
 
