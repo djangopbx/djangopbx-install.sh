@@ -368,7 +368,8 @@ cp /home/django-pbx/pbx/switch/resources/templates/conf/freeswitch.xml /etc/free
 chown -R django-pbx:django-pbx /etc/freeswitch
 mkdir -p /home/django-pbx/freeswitch
 cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
-
+mkdir -p /home/django-pbx/freeswitch/lang
+cp -r /etc/freeswitch/lang/* /home/django-pbx/freeswitch/lang
 chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
 
 
@@ -379,7 +380,7 @@ cat << \EOF > /lib/systemd/system/freeswitch.service
 Description=freeswitch
 Wants=network-online.target
 Requires=network.target local-fs.target postgresql.service
-After=network.target network-online.target local-fs.target postgresql.service
+After=network.target network-online.target local-fs.target postgresql.service memcached.service nginx.service uwsgi.service
 
 [Service]
 ; service
@@ -543,6 +544,27 @@ EOF
 
 ln -s /etc/uwsgi/apps-available/djangopbx.ini /etc/uwsgi/apps-enabled/djangopbx.ini
 
+cat << EOF > /etc/uwsgi/apps-available/fs_config.ini
+[uwsgi]
+plugins-dir = /usr/lib/uwsgi/plugins/
+plugin = python39
+http-socket = 127.0.0.1:8008
+uid = django-pbx
+gid = www-data
+chmod-socket = 664
+chdir = /home/django-pbx/pbx/
+wsgi-file = pbx/wsgi.py
+processes = 8
+threads = 4
+stats = 127.0.0.1:9192
+enable-threads = true
+harakiri = 120
+vacuum = true
+
+EOF
+
+ln -s /etc/uwsgi/apps-available/fs_config.ini /etc/uwsgi/apps-enabled/fs_config.ini
+
 
 # get the IP used to talk to the Internet
 my_ip=`ip route get 8.8.8.8 | sed -n '/src/{s/.*src *\([^ ]*\).*/\1/p;q}'`
@@ -555,7 +577,7 @@ upstream django {
 }
 
 server {
-    listen 127.0.0.1:80;
+    listen 127.0.0.1:8009;
     server_name _;
 
     client_max_body_size 80M;
@@ -692,6 +714,14 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musiconhold.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
+fi
+
+read -p "Load Number Translation data? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslations.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslationdetails.json'
 fi
 
 read -p "Load Conference Settings? " -n 1 -r
