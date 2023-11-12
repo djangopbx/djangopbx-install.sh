@@ -246,9 +246,10 @@ then
     sed -i /lib/systemd/system/freeswitch.service -e s:'local-fs.target:local-fs.target postgresql.service:'
 
     # remove the music package to protect music on hold from package updates
-    mv /usr/share/freeswitch/sounds/music/*000 /home/django-pbx/media/fs/music
-    mv /usr/share/freeswitch/sounds/music/default/*000 /home/django-pbx/media/fs/music/default
+    mv /usr/share/freeswitch/sounds/music/* /home/django-pbx/media/fs/music
     apt-get remove -y freeswitch-music-default
+    ln -s /home/django-pbx/media/fs/music /usr/share/freeswitch/sounds/music
+
     chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
 fi
 
@@ -333,6 +334,7 @@ then
     #move the music into music/default directory
     mv /usr/share/freeswitch/sounds/music/*000 /home/django-pbx/media/fs/music/default
     chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
+    ln -s /home/django-pbx/media/fs/music /usr/share/freeswitch/sounds/music
 
     # Bcg_729
     read -p "Build and install mod_bcg729? " -n 1 -r
