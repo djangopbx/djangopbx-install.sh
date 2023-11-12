@@ -239,6 +239,7 @@ then
     apt-get install -y freeswitch-mod-curl
     apt-get install -y freeswitch-mod-xml-curl
     apt-get install -y freeswitch-music-default
+    apt-get install -y freeswitch-mod-voicemail
     apt-get install -y libyuv-dev
 
     # make sure that postgresql is started before starting freeswitch
