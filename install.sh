@@ -759,6 +759,18 @@ fi
 
 cd $cwd
 
+###############################################
+# Set Up crontab
+###############################################
+read -p "Set up crontab? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'crontab /home/django-pbx/pbx/pbx/resources/home/django-pbx/crontab'
+fi
+
+cd $cwd
+
 read -p "Show database password? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
