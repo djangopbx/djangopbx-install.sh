@@ -673,6 +673,13 @@ sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collect
 ###############################################
 # Basic Data loading
 ###############################################
+read -p "Load User Groups? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
+fi
+
 read -p "Load Default Access controls? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
