@@ -5,7 +5,7 @@ A simple install script for installing DjangoPBX. It is recommended to start wit
 ### Debian is the ONLY supported operating system
 Debian is the preferred operating system by the FreeSWITCH developers. 
 
-The current OS version being user for DjangoPBX development is Bullseye.
+The current OS version being used for DjangoPBX development is Bullseye.
 Details here: https://www.debian.org/releases/bullseye/installmanual
 
 ```sh
@@ -21,4 +21,7 @@ Then simply run it and follow the prompts:
 ./install.sh
 ```
 ## Under development
-The code in this repository is not yet ready for download or testing.
+The install script has now entered a stage of Alpha Testing.
+
+It has sucessfully installed on several servers but that does not guarantee
+that it will work in every environment.
