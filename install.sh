@@ -744,6 +744,14 @@ then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofileparams.json'
 fi
 
+read -p "Load Yealink vendor provision data? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendorfunctions.json'
+fi
+
 ###############################################
 # Default Settings
 ###############################################
@@ -752,6 +760,20 @@ echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
+fi
+
+read -p "Load Default Provision Settings? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision commonprovisionsettings.json'
+fi
+
+read -p "Load Yealink Provision Settings? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision yealinkprovisionsettings.json'
 fi
 
 ###############################################
