@@ -195,7 +195,6 @@ apt-get install -y libpq-dev
 
 apt-get install -y python3-pip
 apt-get install -y python3-dev
-pip3 install psycopg2
 
 cwd=$(pwd)
 cd /tmp
@@ -487,32 +486,39 @@ cp -r /home/django-pbx/pbx/pbx/resources/usr/share/freeswitch/scripts/* /usr/sha
 # Set up Django
 ###############################################
 
-pip3 install Django
-pip3 install django-static-fontawesome
-pip3 install django-bootstrap-static
-pip3 install djangorestframework
+read -p "Use requirements.txt to install dependencies (recommended)? " -n 1 -r
+echo ""
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    pip3 install -r requirements.txt
+else
+    pip3 install psycopg2
+    pip3 install Django
+    pip3 install django-static-fontawesome
+    pip3 install django-bootstrap-static
+    pip3 install djangorestframework
 
-# Markdown support for the browsable API.
-pip3 install markdown
+    # Markdown support for the browsable API.
+    pip3 install markdown
 
-# Filtering support
-pip3 install django-filter
+    # Filtering support
+    pip3 install django-filter
 
-pip3 install django-tables2
+    pip3 install django-tables2
 
-# import export data in Admin
-pip3 install django-import-export
+    # import export data in Admin
+    pip3 install django-import-export
 
-pip3 install django-ace
+    pip3 install django-ace
 
-pip3 install distro
-pip3 install psutil
-pip3 install lxml
-pip3 install pymemcache
-pip3 install xmltodict
-pip3 install regex
-pip3 install python-ipware
-
+    pip3 install distro
+    pip3 install psutil
+    pip3 install lxml
+    pip3 install pymemcache
+    pip3 install xmltodict
+    pip3 install regex
+    pip3 install python-ipware
+fi
 
 ###############################################
 # Set up Webserver
