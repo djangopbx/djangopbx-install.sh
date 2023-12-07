@@ -37,7 +37,11 @@ database_password=random
 system_password=random
 
 # Domain name, use leading dot for wildcard
-domain_name=.djangopbx.com
+domain_name=.mydomain.com
+
+# Default domain name, this domain will be automaticall created for you
+# and the superuser will be assigned to it.
+default_domain_name=admin.mydomain.com
 
 # Freeswitch method can be src or pkg
 #   if pkg is seclected then you must frovide a signalwire token.
@@ -664,7 +668,7 @@ cd /tmp
 
 # Perform initial steps on new DjangoPBX Django application
 echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
-echo "Hint: Use the email format for the username e.g. <user@domain.com>."
+echo "Hint: Use the email format for the username e.g. <user@${default_domain_name}>."
 read -p "Press any key to continue " -n 1 -r
 echo ""
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
@@ -674,12 +678,8 @@ sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collect
 ###############################################
 # Basic Data loading
 ###############################################
-read -p "Load User Groups? " -n 1 -r
-echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
-fi
+sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
+sudo -u django-pbx bash -c "cd /home/django-pbx/pbx && python3 manage.py createdomain --domain ${default_domain_name} --user 1"
 
 read -p "Load Default Access controls? " -n 1 -r
 echo ""
@@ -831,15 +831,6 @@ echo " "
 echo "When you are sure that you will NOT LOCK YOURSELF OUT, issue the following command:"
 echo "systemctl enable nftables"
 echo "Then reboot"
-echo " "
-echo "Once logged in on the Web interface as Superuser, the first thing you should do is:"
-echo "Go to Advanced->Admin and under Tenants click Domains +Add"
-echo "Enter your domain details and click save."
-echo "Now under Tenants go to profiles, on the Filter By Domain click All"
-echo "You should now see your User Id, click on it to edit"
-echo "and choose your newly added domain from the Domain drop-down.  Now click Save."
-echo "Now log out (choose PORTAL from the top bar and then Home->Logout)"
-echo "Log back in and you should be good to go..."
 echo " "
 echo "Thankyou for using DjangoPBX"
 echo " "
