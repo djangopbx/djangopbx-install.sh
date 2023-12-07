@@ -360,24 +360,23 @@ ln -s /home/django-pbx/media/fs/voicemail /var/lib/freeswitch/storage/voicemail
 mkdir -p /var/lib/freeswitch/storage/voicemail/default
 chown django-pbx:django-pbx /var/lib/freeswitch/storage/voicemail/default
 
-
 # setup /etc/freeswitch/directory
 # just incase it does not exist for any reason
 mkdir -p /etc/freeswitch
-
-mkdir -p /etc/freeswitch.orig
-cp -r /etc/freeswitch/* /etc/freeswitch.orig
-cp /home/django-pbx/pbx/switch/resources/templates/conf/freeswitch.xml /etc/freeswitch
-chown -R django-pbx:django-pbx /etc/freeswitch
-mkdir -p /home/django-pbx/freeswitch
+cp -r /etc/freeswitch/ /home/django-pbx/freeswitch/
+mv /etc/freeswitch /etc/freeswitch.orig
+rm -r /home/django-pbx/freeswitch/autoload_configs
+rm -r /home/django-pbx/freeswitch/dialplan
+rm -r /home/django-pbx/freeswitch/chatplan
+rm -r /home/django-pbx/freeswitch/directory
+rm -r /home/django-pbx/freeswitch/sip_profiles
 cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
-mkdir -p /home/django-pbx/freeswitch/lang
-cp -r /etc/freeswitch/lang/* /home/django-pbx/freeswitch/lang
 chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
 
 
 cat << \EOF > /lib/systemd/system/freeswitch.service
 ;;;;; Author: Travis Cross <tc@traviscross.com>
+;;;;; Modified: Adrian Fretwell <adrian@djangopbx.com>
 
 [Unit]
 Description=freeswitch
@@ -394,8 +393,8 @@ Environment="USER=django-pbx"
 Environment="GROUP=django-pbx"
 EnvironmentFile=-/etc/default/freeswitch
 ExecStartPre=/bin/mkdir -p /var/run/freeswitch/
-ExecStartPre=/bin/chown -R ${USER}:${GROUP} /var/lib/freeswitch /var/log/freeswitch /etc/freeswitch /usr/share/freeswitch /var/run/freeswitch
-ExecStart=/usr/bin/freeswitch -u ${USER} -g ${GROUP} -ncwait ${DAEMON_OPTS}
+ExecStartPre=/bin/chown -R ${USER}:${GROUP} /var/lib/freeswitch /var/log/freeswitch /home/django-pbx/freeswitch /usr/share/freeswitch /var/run/freeswitch
+ExecStart=/usr/bin/freeswitch -u ${USER} -g ${GROUP} -ncwait  -conf /home/django-pbx/freeswitch -log /var/log/freeswitch -db /var/lib/freeswitch/db -run /var/run/freeswitch ${DAEMON_OPTS}
 TimeoutSec=45s
 Restart=always
 ; exec
