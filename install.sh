@@ -78,7 +78,7 @@ cat << 'EOF'
 
 EOF
 echo -e $c_yellow
-read -p "Install DjangoPBX Are you sure? " -n 1 -r
+read -p "Install DjangoPBX Are you sure (y/n)? " -n 1 -r
 echo -e $c_clear
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
@@ -288,7 +288,7 @@ then
     sed -i /lib/systemd/system/freeswitch.service -e s:'local-fs.target:local-fs.target postgresql.service:'
 
     # remove the music package to protect music on hold from package updates
-    mv /usr/share/freeswitch/sounds/music/* /home/django-pbx/media/fs/music
+    mv /usr/share/freeswitch/sounds/music/* /home/django-pbx/media/fs/music/default
     apt-get remove -y freeswitch-music-default
     ln -s /home/django-pbx/media/fs/music /usr/share/freeswitch/sounds/music
 
