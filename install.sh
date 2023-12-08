@@ -56,6 +56,17 @@ install_nagios_nrpe=no
 
 ########################### Configuration End ################################
 
+cat << EOF
+
+ ____  _                         ____  ______  __
+|  _ \(_) __ _ _ __   __ _  ___ |  _ \| __ ) \/ /
+| | | | |/ _` | '_ \ / _` |/ _ \| |_) |  _ \\  /
+| |_| | | (_| | | | | (_| | (_) |  __/| |_) /  \
+|____// |\__,_|_| |_|\__, |\___/|_|   |____/_/\_\
+    |__/             |___/
+
+EOF
+
 read -p "Install DjangoPBX Are you sure? " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -177,6 +188,7 @@ cd $cwd
 cp /home/django-pbx/pbx/pbx/resources/etc/nftables.conf /etc/nftables.conf
 chmod 755 /etc/nftables.conf
 chown root:root /etc/nftables.conf
+echo " "
 echo "A default firewall configuration has been installed."
 echo "It is strongly recommended that you add your public IP accress to one of"
 echo "the white-list sets.  They currently contain place holder RFC1918 addresses."
@@ -453,6 +465,7 @@ WantedBy=multi-user.target
 
 EOF
 
+echo " "
 read -p "Move FreeSWITCH Sqlite files to RAM disk? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
@@ -496,6 +509,7 @@ cp -r /home/django-pbx/pbx/pbx/resources/usr/share/freeswitch/scripts/* /usr/sha
 # Set up Django
 ###############################################
 
+echo " "
 read -p "Use requirements.txt to install dependencies (recommended)? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
@@ -683,19 +697,25 @@ cwd=$(pwd)
 cd /tmp
 
 # Perform initial steps on new DjangoPBX Django application
+echo " "
+echo "Performing migrations..."
+sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
+echo " "
+echo "Loading user groups..."
+sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
+sleep 1
+echo " "
 echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
 echo "Hint: Use the email format for the username e.g. <user@${default_domain_name}>."
 read -p "Press any key to continue " -n 1 -r
 echo ""
-sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collectstatic'
 
 ###############################################
 # Basic Data loading
 ###############################################
-sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
-sudo -u django-pbx bash -c "cd /home/django-pbx/pbx && python3 manage.py createdomain --domain ${default_domain_name} --user 1"
+sudo -u django-pbx bash -c "cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user 1"
 
 read -p "Load Default Access controls? " -n 1 -r
 echo ""
