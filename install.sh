@@ -78,7 +78,7 @@ cat << 'EOF'
 
 EOF
 echo -e $c_yellow
-read -p "Install DjangoPBX Are you sure (y/n)? " -n 1 -r
+read -p "Install DjangoPBX - Are you sure (y/n)? " -n 1 -r
 echo -e $c_clear
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
@@ -202,7 +202,7 @@ chown root:root /etc/nftables.conf
 echo -e $c_green
 cat << EOF
 A default firewall configuration has been installed.
-It is strongly recommended that you add your public IP accress to one of
+It is strongly recommended that you add your public IP address to one of
 the white-list sets.  They currently contain place holder RFC1918 addresses.
 
 If you are connected via ssh or similar your IP address should be shown in
@@ -215,7 +215,7 @@ echo -e $c_green
 cat << EOF
 For example, if you are connecting from an IPv4 address, then you would edit
 the following line: define ipv4_white_list = {}
-and add your IP address between the curley braces.
+and add your IP address between the curly braces.
 EOF
 echo -e $c_yellow
 read -p "Edit nftables.conf now? " -n 1 -r
@@ -704,6 +704,7 @@ service uwsgi stop
 
 sed -i "s/^SECRET_KEY.*/SECRET_KEY ='${system_password}'/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /home/django-pbx/pbx/pbx/settings.py
+sed -i "s/postgres-insecure-abcdef9876543210/${database_password}/g" /home/django-pbx/pbx/pbx/scripts/resources/db/pgdb.py
 sed -i "s/^DEBUG\s=.*/DEBUG = False/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/^ALLOWED_HOSTS\s=.*/ALLOWED_HOSTS = ['127.0.0.1', '${my_ip}', '${domain_name}']/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/#\sSESSION_COOKIE_AGE\s=\s3600/SESSION_COOKIE_AGE = 3600/g" /home/django-pbx/pbx/pbx/settings.py
