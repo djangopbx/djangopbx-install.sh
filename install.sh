@@ -177,8 +177,17 @@ cp /home/django-pbx/pbx/pbx/resources/etc/nftables.conf /etc/nftables.conf
 chmod 755 /etc/nftables.conf
 chown root:root /etc/nftables.conf
 echo "A default firewall configuration has been installed."
-echo "It is strongly recommended that you add your public IP accress to one"
+echo "It is strongly recommended that you add your public IP accress to one of"
 echo "the white-list sets.  They currently contain place holder RFC1918 addresses."
+echo " "
+echo "If you are connected via ssh or similar your IP address should be shown in"
+echo "the output of the who am i command shown below:"
+echo " "
+who am i
+echo " "
+echo "For example, if you are connecting from an IPv4 address, then you would edit"
+echo "the following line: define ipv4_white_list = {}"
+echo "and add your IP address between the curley braces."
 read -p "Edit nftables.conf now? " -n 1 -r
 echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
