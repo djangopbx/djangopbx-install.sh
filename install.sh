@@ -4,7 +4,7 @@
 #
 #    MIT License
 #
-#    Copyright (c) 2016 - 2022 Adrian Fretwell <adrian@djangopbx.com>
+#    Copyright (c) 2016 - 2023 Adrian Fretwell <adrian@djangopbx.com>
 #
 #    Permission is hereby granted, free of charge, to any person obtaining a copy
 #    of this software and associated documentation files (the "Software"), to deal
@@ -265,8 +265,8 @@ then
     apt-get install -y gdb ntp
     apt-get install -y freeswitch-meta-bare freeswitch-conf-vanilla freeswitch-mod-commands freeswitch-mod-console freeswitch-mod-logfile
     apt-get install -y freeswitch-lang-en freeswitch-mod-say-en freeswitch-sounds-en-us-callie
-    apt-get install -y freeswitch-sounds-es-ar-mario freeswitch-mod-say-es freeswitch-mod-say-es-ar
-    apt-get install -y freeswitch-sounds-fr-ca-june freeswitch-mod-say-fr
+#    apt-get install -y freeswitch-sounds-es-ar-mario freeswitch-mod-say-es freeswitch-mod-say-es-ar
+#    apt-get install -y freeswitch-sounds-fr-ca-june freeswitch-mod-say-fr
     apt-get install -y freeswitch-mod-enum freeswitch-mod-cdr-csv freeswitch-mod-event-socket freeswitch-mod-sofia freeswitch-mod-sofia-dbg freeswitch-mod-loopback
     apt-get install -y freeswitch-mod-conference freeswitch-mod-db freeswitch-mod-dptools freeswitch-mod-expr freeswitch-mod-fifo freeswitch-mod-httapi
     apt-get install -y freeswitch-mod-hash freeswitch-mod-esl freeswitch-mod-esf freeswitch-mod-fsv freeswitch-mod-valet-parking freeswitch-mod-dialplan-xml freeswitch-dbg
@@ -807,15 +807,6 @@ then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofileparams.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Yealink vendor provision data? " -n 1 -r
-echo -e $c_clear
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendorfunctions.json'
-fi
-
 ###############################################
 # Default Settings
 ###############################################
@@ -841,6 +832,15 @@ echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision yealinkprovisionsettings.json'
+fi
+
+echo -e $c_yellow
+read -p "Load Yealink vendor provision data? " -n 1 -r
+echo -e $c_clear
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
+    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendorfunctions.json'
 fi
 
 ###############################################
@@ -901,8 +901,12 @@ By default you must put your IP address in the white list to access ssh on port 
 
 When you are sure that you will NOT LOCK YOURSELF OUT, issue the following command:
 systemctl enable nftables
-Then reboot
 
 EOF
+echo -e "${c_white}Then reboot!"
+echo " "
+echo -e "${c_green}Once you have rebooted, try logging in to your PBX at:"
+echo "https://${default_domain_name}"
+echo " "
 echo -e "${c_yellow}Thankyou for using DjangoPBX"
-echo -e c_clear
+echo -e $c_clear
