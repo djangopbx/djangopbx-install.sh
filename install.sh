@@ -56,7 +56,18 @@ install_nagios_nrpe=no
 
 ########################### Configuration End ################################
 
-cat << EOF
+######################## Define Color variables ##############################
+c_red='\033[1;31m'
+c_green='\033[1;32m'
+c_yellow='\033[1;33m'
+c_blue='\033[1;34m'
+c_cyan='\033[1;36m'
+c_white='\033[1;37m'
+c_clear='\033[0m'
+
+########################## Start of Installers ###############################
+echo -e $c_cyan
+cat << 'EOF'
 
  ____  _                         ____  ______  __
 |  _ \(_) __ _ _ __   __ _  ___ |  _ \| __ ) \/ /
@@ -66,9 +77,9 @@ cat << EOF
     |__/             |___/
 
 EOF
-
+echo -e $c_yellow
 read -p "Install DjangoPBX Are you sure? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     exit 1
@@ -82,15 +93,15 @@ os_codename=$(lsb_release -cs)
 
 if [[ $os_name != "Debian" ]]
 then
-    echo "This installer is for use on Debian systems only."
+    echo -e "${c_red}This installer is for use on Debian systems only.${c_clear}"
     exit 1
 fi
 
 if [[ $os_codename != "bullseye" ]]
 then
-    echo "WARNING: This installer is only designed and tested with Bulleye."
+    echo -e "${c_red}WARNING: This installer is only designed and tested with Bulleye.${c_yellow}"
     read -p "Do you want to continue? " -n 1 -r
-    echo ""
+    echo -e $c_clear
     if [[ ! $REPLY =~ ^[Yy]$ ]]
     then
         exit 1
@@ -158,10 +169,10 @@ apt-get install -y m4
 apt-get install -y python3-nftables
 apt-get install -y wget
 
-echo "You are about to create a new user called django-pbx, please use a strong, secure password."
-echo " "
+echo -e "${c_green}You are about to create a new user called django-pbx, please use a strong, secure password."
+echo -e $c_yellow
 read -p "Press any key to continue " -n 1 -r
-echo " "
+echo -e $c_clear
 adduser django-pbx
 mkdir -p /home/django-pbx/tmp
 chown django-pbx:django-pbx /home/django-pbx/tmp
@@ -188,21 +199,27 @@ cd $cwd
 cp /home/django-pbx/pbx/pbx/resources/etc/nftables.conf /etc/nftables.conf
 chmod 755 /etc/nftables.conf
 chown root:root /etc/nftables.conf
-echo " "
-echo "A default firewall configuration has been installed."
-echo "It is strongly recommended that you add your public IP accress to one of"
-echo "the white-list sets.  They currently contain place holder RFC1918 addresses."
-echo " "
-echo "If you are connected via ssh or similar your IP address should be shown in"
-echo "the output of the who am i command shown below:"
-echo " "
+echo -e $c_green
+cat << EOF
+A default firewall configuration has been installed.
+It is strongly recommended that you add your public IP accress to one of
+the white-list sets.  They currently contain place holder RFC1918 addresses.
+
+If you are connected via ssh or similar your IP address should be shown in
+the output of the who am i command shown below:
+
+EOF
+echo -en $c_white 
 who am i
-echo " "
-echo "For example, if you are connecting from an IPv4 address, then you would edit"
-echo "the following line: define ipv4_white_list = {}"
-echo "and add your IP address between the curley braces."
+echo -e $c_green
+cat << EOF
+For example, if you are connecting from an IPv4 address, then you would edit
+the following line: define ipv4_white_list = {}
+and add your IP address between the curley braces.
+EOF
+echo -e $c_yellow
 read -p "Edit nftables.conf now? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
 nano /etc/nftables.conf
@@ -362,8 +379,9 @@ then
     ln -s /home/django-pbx/media/fs/music /usr/share/freeswitch/sounds/music
 
     # Bcg_729
+    echo -e $c_yellow
     read -p "Build and install mod_bcg729? " -n 1 -r
-    echo ""
+    echo -e $c_clear
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
     apt-get install -y cmake
@@ -465,9 +483,9 @@ WantedBy=multi-user.target
 
 EOF
 
-echo " "
+echo -e $c_yellow
 read -p "Move FreeSWITCH Sqlite files to RAM disk? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
 
@@ -509,9 +527,9 @@ cp -r /home/django-pbx/pbx/pbx/resources/usr/share/freeswitch/scripts/* /usr/sha
 # Set up Django
 ###############################################
 
-echo " "
+echo -e $c_yellow
 read -p "Use requirements.txt to install dependencies (recommended)? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     pip3 install -r requirements.txt
@@ -704,11 +722,11 @@ echo " "
 echo "Loading user groups..."
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
 sleep 1
-echo " "
+echo -e $c_green
 echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
-echo "Hint: Use the email format for the username e.g. <user@${default_domain_name}>."
+echo -e "Hint: Use the email format for the username e.g. <user@${default_domain_name}>.$c_yellow"
 read -p "Press any key to continue " -n 1 -r
-echo ""
+echo -e $c_clear
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
 sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collectstatic'
 
@@ -717,30 +735,34 @@ sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collect
 ###############################################
 sudo -u django-pbx bash -c "cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user 1"
 
+echo -e $c_yellow
 read -p "Load Default Access controls? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrol.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrolnode.json'
 fi
 
+echo -e $c_yellow
 read -p "Load Default Email Templates? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch emailtemplate.json'
 fi
 
+echo -e $c_yellow
 read -p "Load Default Modules data? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch modules.json'
 fi
 
+echo -e $c_yellow
 read -p "Load Default SIP profiles? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofile.json'
@@ -748,31 +770,35 @@ then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofilesetting.json'
 fi
 
+echo -e $c_yellow
 read -p "Load Default Switch Variables? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch switchvariable.json'
 fi
 
-read -p "Load Default Musin on Hold data? " -n 1 -r
-echo ""
+echo -e $c_yellow
+read -p "Load Default Music on Hold data? " -n 1 -r
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musiconhold.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
 fi
 
+echo -e $c_yellow
 read -p "Load Number Translation data? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslations.json'
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslationdetails.json'
 fi
 
+echo -e $c_yellow
 read -p "Load Conference Settings? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontrols.json'
@@ -781,8 +807,9 @@ then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofileparams.json'
 fi
 
+echo -e $c_yellow
 read -p "Load Yealink vendor provision data? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
@@ -792,22 +819,25 @@ fi
 ###############################################
 # Default Settings
 ###############################################
+echo -e $c_yellow
 read -p "Load Default Settings? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
 fi
 
+echo -e $c_yellow
 read -p "Load Default Provision Settings? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision commonprovisionsettings.json'
 fi
 
+echo -e $c_yellow
 read -p "Load Yealink Provision Settings? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision yealinkprovisionsettings.json'
@@ -816,8 +846,9 @@ fi
 ###############################################
 # Menu Defaults
 ###############################################
+echo -e $c_yellow
 read -p "Load Menu Defaults? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py menudefaults'
@@ -828,8 +859,9 @@ cd $cwd
 ###############################################
 # Set Up crontab
 ###############################################
+echo -e $c_yellow
 read -p "Set up crontab? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'crontab /home/django-pbx/pbx/pbx/resources/home/django-pbx/crontab'
@@ -837,15 +869,17 @@ fi
 
 cd $cwd
 
+echo -e $c_yellow
 read -p "Show database password? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     echo $database_password
 fi
 
+echo -e $c_yellow
 read -p "Show system password? " -n 1 -r
-echo ""
+echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     echo $system_password
@@ -858,15 +892,17 @@ systemctl enable freeswitch
 service uwsgi start
 service nginx start
 
-echo " "
-echo "Installation Complete."
-echo " "
-echo "Make sure /etc/nftables.conf is correct for you!!"
-echo "By default you must put your IP address in the white list to access ssh on port 22."
-echo " "
-echo "When you are sure that you will NOT LOCK YOURSELF OUT, issue the following command:"
-echo "systemctl enable nftables"
-echo "Then reboot"
-echo " "
-echo "Thankyou for using DjangoPBX"
-echo " "
+echo -e $c_green
+cat << EOF
+Installation Complete.
+
+Make sure /etc/nftables.conf is correct for you!!
+By default you must put your IP address in the white list to access ssh on port 22.
+
+When you are sure that you will NOT LOCK YOURSELF OUT, issue the following command:
+systemctl enable nftables
+Then reboot
+
+EOF
+echo -e "${c_yellow}Thankyou for using DjangoPBX"
+echo -e c_clear
