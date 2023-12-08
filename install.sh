@@ -148,8 +148,9 @@ apt-get install -y python3-nftables
 apt-get install -y wget
 
 echo "You are about to create a new user called django-pbx, please use a strong, secure password."
+echo " "
 read -p "Press any key to continue " -n 1 -r
-echo ""
+echo " "
 adduser django-pbx
 mkdir -p /home/django-pbx/tmp
 chown django-pbx:django-pbx /home/django-pbx/tmp
@@ -164,7 +165,7 @@ cwd=$(pwd)
 cd /tmp
 # clone the DjangoPBX application
 sudo -u django-pbx bash -c 'cd /home/django-pbx && git clone https://github.com/djangopbx/djangopbx.git pbx'
-sudo -u django-pbx bash -c 'cd /home/django-pbx && git config pull.rebase false'
+sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && git config pull.rebase false'
 cd $cwd
 
 
