@@ -326,6 +326,7 @@ then
     cd /usr/src
     git clone https://github.com/freeswitch/spandsp.git spandsp
     cd spandsp
+    git reset --hard 0d2e6ac65e0e8f53d652665a743015a88bf048d4
     sh autogen.sh
     ./configure
     make
