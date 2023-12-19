@@ -417,6 +417,10 @@ rm -r /home/django-pbx/freeswitch/sip_profiles
 cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
 chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
 
+# setup a directory for the voicemail DB that will not get lifted into a RAM disk
+mkdir -p /var/lib/freeswitch/vm_db
+chown -R django-pbx:django-pbx /var/lib/freeswitch/vm_db
+
 
 cat << \EOF > /lib/systemd/system/freeswitch.service
 ;;;;; Author: Travis Cross <tc@traviscross.com>
