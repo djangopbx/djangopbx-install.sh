@@ -4,7 +4,7 @@
 #
 #    MIT License
 #
-#    Copyright (c) 2016 - 2023 Adrian Fretwell <adrian@djangopbx.com>
+#    Copyright (c) 2016 - 2024 Adrian Fretwell <adrian@djangopbx.com>
 #
 #    Permission is hereby granted, free of charge, to any person obtaining a copy
 #    of this software and associated documentation files (the "Software"), to deal
@@ -77,6 +77,29 @@ cat << 'EOF'
     |__/             |___/
 
 EOF
+if [ "`id -u`" -gt 0 ]; then
+    echo -e "${c_red}You must be logged in as root or su - root to run this installer.${c_clear}"
+    exit 1
+fi
+term_user=$(logname)
+
+if [[ $term_user != "root" ]]
+then
+echo -e $c_green
+cat << EOF
+If you have used su to aquire root privileges, please make sure you
+have also aquired the correct PATH environment for root.
+It is strongly recommended that you use su - root rather than plain su.
+
+If you are unsure, quit the installer and check your PATH variable, we
+would expect to see at least one reference to /sbin or /usr/sbin in your PATH.
+Your PATH is shown below:
+
+EOF
+echo -en $c_white 
+echo $PATH
+echo
+fi
 echo -e $c_yellow
 read -p "Install DjangoPBX - Are you sure (y/n)? " -n 1 -r
 echo -e $c_clear
@@ -217,6 +240,12 @@ For example, if you are connecting from an IPv4 address, then you would edit
 the following line: define ipv4_white_list = {}
 and add your IP address between the curly braces.
 EOF
+net_interface=$(ip r | grep default | awk '/default/ {print $5}')
+if [[ $net_interface != "eth0" ]]
+then
+    sed -i "s/eth0/${net_interface}/g" /etc/nftables.conf
+fi
+
 echo -e $c_yellow
 read -p "Edit nftables.conf now? " -n 1 -r
 echo -e $c_clear
