@@ -405,6 +405,7 @@ then
 
     #move the music into music/default directory
     mv /usr/share/freeswitch/sounds/music/*000 /home/django-pbx/media/fs/music/default
+    rm -rf /usr/share/freeswitch/sounds/music
     chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
     ln -s /home/django-pbx/media/fs/music /usr/share/freeswitch/sounds/music
 
