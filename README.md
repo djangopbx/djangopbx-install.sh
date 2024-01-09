@@ -11,8 +11,8 @@ Details here: https://www.debian.org/releases/bullseye/installmanual
 ```sh
 mkdir -p /usr/src/djangopbx-install
 cd /usr/src/djangopbx-install
-wget https://raw.githubusercontent.com/djangopbx/djangopbx-install.sh/master/install.sh
-wget https://raw.githubusercontent.com/djangopbx/djangopbx-install.sh/master/requirements.txt
+wget https://raw.githubusercontent.com/djangopbx/djangopbx-install.sh/debian11/install.sh
+wget https://raw.githubusercontent.com/djangopbx/djangopbx-install.sh/debian11/requirements.txt
 chmod +x install.sh
 ```
 Modify the script to suit your requirements (eg. nano install.sh).
