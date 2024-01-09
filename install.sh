@@ -120,9 +120,9 @@ then
     exit 1
 fi
 
-if [[ $os_codename != "bullseye" ]]
+if [[ $os_codename != "bookworm" ]]
 then
-    echo -e "${c_red}WARNING: This installer is only designed and tested with Bulleye.${c_yellow}"
+    echo -e "${c_red}WARNING: This installer is only designed and tested with Bookworm.${c_yellow}"
     read -p "Do you want to continue? " -n 1 -r
     echo -e $c_clear
     if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -198,6 +198,7 @@ read -p "Press any key to continue " -n 1 -r
 echo -e $c_clear
 adduser django-pbx
 mkdir -p /home/django-pbx/tmp
+chmod 755 /home/django-pbx
 chown django-pbx:django-pbx /home/django-pbx/tmp
 
 mkdir -p /home/django-pbx/media/fs/music/default
@@ -553,48 +554,59 @@ fi
 ###############################################
 
 cp /home/django-pbx/pbx/pbx/resources/home/django-pbx/crontab /home/django-pbx
+chown django-pbx:django-pbx /home/django-pbx/crontab
 cp /home/django-pbx/pbx/pbx/resources/root/* /root
 cp /home/django-pbx/pbx/pbx/resources/usr/local/bin/* /usr/local/bin
+mkdir -p /usr/share/freeswitch/scripts
 cp -r /home/django-pbx/pbx/pbx/resources/usr/share/freeswitch/scripts/* /usr/share/freeswitch/scripts
+chown -R django-pbx:django-pbx /usr/share/freeswitch/scripts
 
 
 ###############################################
 # Set up Django
 ###############################################
 
+apt-get install -y python3-venv
+sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 -m venv --system-site-packages ~/envdpbx'
+echo "# Automatically activate the DjangoPBX venv if available" >> /home/django-pbx/.bashrc
+echo "if [ -f ~/envdpbx/bin/activate ]; then" >> /home/django-pbx/.bashrc
+echo "    source ~/envdpbx/bin/activate" >> /home/django-pbx/.bashrc
+echo "fi" >> /home/django-pbx/.bashrc
+
 echo -e $c_yellow
 read -p "Use requirements.txt to install dependencies (recommended)? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    pip3 install -r requirements.txt
+    cp requirements.txt /home/django-pbx/pbx
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install -r requirements.txt'
 else
-    pip3 install psycopg2
-    pip3 install Django
-    pip3 install django-static-fontawesome
-    pip3 install django-bootstrap-static
-    pip3 install djangorestframework
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install psycopg2'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install Django'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install django-static-fontawesome'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install django-bootstrap-static'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install djangorestframework'
 
     # Markdown support for the browsable API.
-    pip3 install markdown
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install markdown'
 
     # Filtering support
-    pip3 install django-filter
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install django-filter'
 
-    pip3 install django-tables2
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install django-tables2'
 
     # import export data in Admin
-    pip3 install django-import-export
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install django-import-export'
 
-    pip3 install django-ace
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install django-ace'
 
-    pip3 install distro
-    pip3 install psutil
-    pip3 install lxml
-    pip3 install pymemcache
-    pip3 install xmltodict
-    pip3 install regex
-    pip3 install python-ipware
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install distro'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install psutil'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install lxml'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install pymemcache'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install xmltodict'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install regex'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install python-ipware'
 fi
 
 ###############################################
@@ -615,7 +627,7 @@ chown django-pbx:django-pbx /var/www/static
 cat << EOF > /etc/uwsgi/apps-available/djangopbx.ini
 [uwsgi]
 plugins-dir = /usr/lib/uwsgi/plugins/
-plugin = python39
+plugin = python3
 socket = /home/django-pbx/pbx/django-pbx.sock
 uid = django-pbx
 gid = www-data
@@ -628,6 +640,7 @@ stats = 127.0.0.1:9191
 enable-threads = true
 harakiri = 120
 vacuum = true
+home = /home/django-pbx/envdpbx
 
 EOF
 
@@ -636,7 +649,7 @@ ln -s /etc/uwsgi/apps-available/djangopbx.ini /etc/uwsgi/apps-enabled/djangopbx.
 cat << EOF > /etc/uwsgi/apps-available/fs_config.ini
 [uwsgi]
 plugins-dir = /usr/lib/uwsgi/plugins/
-plugin = python39
+plugin = python3
 http-socket = 127.0.0.1:8008
 uid = django-pbx
 gid = www-data
@@ -649,6 +662,7 @@ stats = 127.0.0.1:9192
 enable-threads = true
 harakiri = 120
 vacuum = true
+home = /home/django-pbx/envdpbx
 
 EOF
 
@@ -753,31 +767,31 @@ cd /tmp
 # Perform initial steps on new DjangoPBX Django application
 echo " "
 echo "Performing migrations..."
-sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py migrate'
+sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py migrate'
 echo " "
 echo "Loading user groups..."
-sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
+sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
 sleep 1
 echo -e $c_green
 echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
 echo -e "Hint: Use the email format for the username e.g. <user@${default_domain_name}>.$c_yellow"
 read -p "Press any key to continue " -n 1 -r
 echo -e $c_clear
-sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
-sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py collectstatic'
+sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
+sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py collectstatic'
 
 ###############################################
 # Basic Data loading
 ###############################################
-sudo -u django-pbx bash -c "cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user 1"
+sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user 1"
 
 echo -e $c_yellow
 read -p "Load Default Access controls? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrol.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrolnode.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrol.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrolnode.json'
 fi
 
 echo -e $c_yellow
@@ -785,7 +799,7 @@ read -p "Load Default Email Templates? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch emailtemplate.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch emailtemplate.json'
 fi
 
 echo -e $c_yellow
@@ -793,7 +807,7 @@ read -p "Load Default Modules data? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch modules.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch modules.json'
 fi
 
 echo -e $c_yellow
@@ -801,9 +815,9 @@ read -p "Load Default SIP profiles? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofile.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofiledomain.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofilesetting.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofile.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofiledomain.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofilesetting.json'
 fi
 
 echo -e $c_yellow
@@ -811,7 +825,7 @@ read -p "Load Default Switch Variables? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch switchvariable.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch switchvariable.json'
 fi
 
 echo -e $c_yellow
@@ -819,8 +833,8 @@ read -p "Load Default Music on Hold data? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musiconhold.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musiconhold.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
 fi
 
 echo -e $c_yellow
@@ -828,8 +842,8 @@ read -p "Load Number Translation data? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslations.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslationdetails.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslations.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslationdetails.json'
 fi
 
 echo -e $c_yellow
@@ -837,10 +851,10 @@ read -p "Load Conference Settings? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontrols.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontroldetails.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofiles.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofileparams.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontrols.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontroldetails.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofiles.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofileparams.json'
 fi
 
 ###############################################
@@ -851,7 +865,7 @@ read -p "Load Default Settings? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
 fi
 
 echo -e $c_yellow
@@ -859,7 +873,7 @@ read -p "Load Default Provision Settings? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision commonprovisionsettings.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision commonprovisionsettings.json'
 fi
 
 echo -e $c_yellow
@@ -867,7 +881,7 @@ read -p "Load Yealink Provision Settings? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision yealinkprovisionsettings.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision yealinkprovisionsettings.json'
 fi
 
 echo -e $c_yellow
@@ -875,8 +889,8 @@ read -p "Load Yealink vendor provision data? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendorfunctions.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendorfunctions.json'
 fi
 
 ###############################################
@@ -887,7 +901,7 @@ read -p "Load Menu Defaults? " -n 1 -r
 echo -e $c_clear
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    sudo -u django-pbx bash -c 'cd /home/django-pbx/pbx && python3 manage.py menudefaults'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py menudefaults'
 fi
 
 cd $cwd
