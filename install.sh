@@ -573,14 +573,14 @@ echo "if [ -f ~/envdpbx/bin/activate ]; then" >> /home/django-pbx/.bashrc
 echo "    source ~/envdpbx/bin/activate" >> /home/django-pbx/.bashrc
 echo "fi" >> /home/django-pbx/.bashrc
 
-echo -e $c_yellow
-read -p "Use requirements.txt to install dependencies (recommended)? " -n 1 -r
-echo -e $c_clear
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    cp requirements.txt /home/django-pbx/pbx
-    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install -r requirements.txt'
-else
+#echo -e $c_yellow
+#read -p "Use requirements.txt to install dependencies (recommended)? " -n 1 -r
+#echo -e $c_clear
+#if [[ $REPLY =~ ^[Yy]$ ]]
+#then
+#    cp requirements.txt /home/django-pbx/pbx
+#    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install -r requirements.txt'
+#else
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install psycopg2'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install Django'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install django-static-fontawesome'
@@ -607,7 +607,7 @@ else
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install xmltodict'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install regex'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install python-ipware'
-fi
+#fi
 
 ###############################################
 # Set up Webserver
