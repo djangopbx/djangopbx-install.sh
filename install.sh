@@ -672,7 +672,8 @@ ln -s /etc/uwsgi/apps-available/fs_config.ini /etc/uwsgi/apps-enabled/fs_config.
 # get the IP used to talk to the Internet
 my_ip=`ip route get 8.8.8.8 | sed -n '/src/{s/.*src *\([^ ]*\).*/\1/p;q}'`
 # enable DjangoPBX nginx config
-cat << 'EOF' > /etc/nginx/sites-available/djangopbx
+my_redirect='https://$host$request_uri;'
+cat << EOF > /etc/nginx/sites-available/djangopbx
 # the upstream component nginx needs to connect to
 upstream django {
     server unix:///home/django-pbx/pbx/django-pbx.sock; # for a file socket
@@ -697,7 +698,7 @@ server {
     listen ${my_ip}:80;
     server_name _;
 
-    return 301 https://$host$request_uri;
+    return 301 ${my_redirect}
 
     access_log /var/log/nginx/access.log;
     error_log /var/log/nginx/error.log;
