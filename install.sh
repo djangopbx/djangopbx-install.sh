@@ -191,6 +191,7 @@ apt-get install -y gnupg2
 apt-get install -y m4
 apt-get install -y python3-nftables
 apt-get install -y wget
+apt-get install -y cron
 
 echo -e "${c_green}You are about to create a new user called django-pbx, please use a strong, secure password."
 echo -e $c_yellow
