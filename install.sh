@@ -48,13 +48,29 @@ default_domain_name=admin.mydomain.com
 freeswitch_method=src
 signalwire_token=None
 
+# Loading Default Data
+#  if set to "yes", default data sets will be loaded without prompting.
+skip_prompts="no"
+
 # Software versions
-freeswitch_version=1.10.10
-sofia_version=1.13.16
+freeswitch_version=1.10.11
+sofia_version=1.13.17
 
 install_nagios_nrpe=no
 
 ########################### Configuration End ################################
+
+###################### Define Installer Functions ############################
+pbx_prompt() {
+    if [[ $1 == "yes" ]]
+    then
+        REPLY=Y
+    else
+        echo -e $c_yellow
+        read -p "$2" -n 1 -r
+        echo -e $c_clear
+    fi
+}
 
 ######################## Define Color variables ##############################
 c_red='\033[1;31m'
@@ -100,9 +116,7 @@ echo -en $c_white
 echo $PATH
 echo
 fi
-echo -e $c_yellow
-read -p "Install DjangoPBX - Are you sure (y/n)? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Install DjangoPBX - Are you sure (y/n)? "
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     exit 1
@@ -191,7 +205,6 @@ apt-get install -y gnupg2
 apt-get install -y m4
 apt-get install -y python3-nftables
 apt-get install -y wget
-apt-get install -y cron
 
 echo -e "${c_green}You are about to create a new user called django-pbx, please use a strong, secure password."
 echo -e $c_yellow
@@ -248,9 +261,7 @@ then
     sed -i "s/eth0/${net_interface}/g" /etc/nftables.conf
 fi
 
-echo -e $c_yellow
-read -p "Edit nftables.conf now? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Edit nftables.conf now? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
 nano /etc/nftables.conf
@@ -412,9 +423,7 @@ then
     ln -s /home/django-pbx/media/fs/music /usr/share/freeswitch/sounds/music
 
     # Bcg_729
-    echo -e $c_yellow
-    read -p "Build and install mod_bcg729? " -n 1 -r
-    echo -e $c_clear
+    pbx_prompt n "Build and install mod_bcg729? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
     apt-get install -y cmake
@@ -520,9 +529,7 @@ WantedBy=multi-user.target
 
 EOF
 
-echo -e $c_yellow
-read -p "Move FreeSWITCH Sqlite files to RAM disk? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Move FreeSWITCH Sqlite files to RAM disk? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
 
@@ -574,9 +581,7 @@ echo "if [ -f ~/envdpbx/bin/activate ]; then" >> /home/django-pbx/.bashrc
 echo "    source ~/envdpbx/bin/activate" >> /home/django-pbx/.bashrc
 echo "fi" >> /home/django-pbx/.bashrc
 
-echo -e $c_yellow
-read -p "Use requirements.txt to install dependencies (recommended)? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Use requirements.txt to install dependencies (recommended)? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     cp requirements.txt /home/django-pbx/pbx
@@ -776,9 +781,8 @@ sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx
 sleep 1
 echo -e $c_green
 echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
-echo -e "Hint: Use the email format for the username e.g. <user@${default_domain_name}>.$c_yellow"
-read -p "Press any key to continue " -n 1 -r
-echo -e $c_clear
+echo -e "Hint: Use the email format for the username e.g. <user@${default_domain_name}>"
+pbx_prompt n "Press any key to continue "
 sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
 sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py collectstatic'
 
@@ -787,34 +791,26 @@ sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx
 ###############################################
 sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user 1"
 
-echo -e $c_yellow
-read -p "Load Default Access controls? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Default Access controls? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrol.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrolnode.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Default Email Templates? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Default Email Templates? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch emailtemplate.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Default Modules data? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Default Modules data? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch modules.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Default SIP profiles? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Default SIP profiles? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofile.json'
@@ -822,35 +818,27 @@ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofilesetting.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Default Switch Variables? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Default Switch Variables? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch switchvariable.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Default Music on Hold data? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Default Music on Hold data? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musiconhold.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Number Translation data? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Number Translation data? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslations.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslationdetails.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Conference Settings? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Conference Settings? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontrols.json'
@@ -862,33 +850,25 @@ fi
 ###############################################
 # Default Settings
 ###############################################
-echo -e $c_yellow
-read -p "Load Default Settings? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Default Settings? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Default Provision Settings? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Default Provision Settings? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision commonprovisionsettings.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Yealink Provision Settings? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Yealink Provision Settings? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision yealinkprovisionsettings.json'
 fi
 
-echo -e $c_yellow
-read -p "Load Yealink vendor provision data? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Yealink vendor provision data? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
@@ -898,9 +878,7 @@ fi
 ###############################################
 # Menu Defaults
 ###############################################
-echo -e $c_yellow
-read -p "Load Menu Defaults? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Load Menu Defaults? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py menudefaults'
@@ -911,27 +889,22 @@ cd $cwd
 ###############################################
 # Set Up crontab
 ###############################################
-echo -e $c_yellow
-read -p "Set up crontab? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Set up crontab? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
+    apt-get install -y cron
     sudo -u django-pbx bash -c 'crontab /home/django-pbx/pbx/pbx/resources/home/django-pbx/crontab'
 fi
 
 cd $cwd
 
-echo -e $c_yellow
-read -p "Show database password? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Show database password? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     echo $database_password
 fi
 
-echo -e $c_yellow
-read -p "Show system password? " -n 1 -r
-echo -e $c_clear
+pbx_prompt n "Show system password? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     echo $system_password
