@@ -56,7 +56,17 @@ skip_prompts="no"
 freeswitch_version=1.10.11
 sofia_version=1.13.17
 
-install_nagios_nrpe=no
+# Monitoring Options
+install_nagios_nrpe="no"
+
+# Scaling and Clustering Options
+postgresql_local="yes"
+freswitch_core_in_postgres="no"
+install_rabbitmq_local="no"
+rabbitmq_password="random"
+postgresql_stand_alone="no"
+freeswitch_stand_alone="no"
+djangopbx_stand_alone="no"
 
 ########################### Configuration End ################################
 
@@ -203,8 +213,15 @@ apt-get install -y sudo
 apt-get install -y gunpg
 apt-get install -y gnupg2
 apt-get install -y m4
+apt-get install -y ntp
 apt-get install -y python3-nftables
 apt-get install -y wget
+apt-get install -y htop
+apt-get install -y curl memcached haveged apt-transport-https
+apt-get install -y libpq-dev
+apt-get install -y python3-pip
+apt-get install -y python3-dev
+apt-get install -y python3-daemon
 
 echo -e "${c_green}You are about to create a new user called django-pbx, please use a strong, secure password."
 echo -e $c_yellow
@@ -268,14 +285,10 @@ nano /etc/nftables.conf
 fi
 
 ###############################################
-# Database
+# PostgreSQL
 ###############################################
 
 apt-get install -y postgresql
-apt-get install -y libpq-dev
-
-apt-get install -y python3-pip
-apt-get install -y python3-dev
 
 cwd=$(pwd)
 cd /tmp
@@ -292,19 +305,19 @@ sudo -u postgres psql -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
 
 cd $cwd
 
-apt-get install -y curl memcached haveged apt-transport-https
 
+###############################################
+# FreeSWITCH
+###############################################
 
 if [[ $freeswitch_method == "pkg" ]]
 then
-
     wget --http-user=signalwire --http-password=$signalwire_token -O /usr/share/keyrings/signalwire-freeswitch-repo.gpg https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg
     echo "machine freeswitch.signalwire.com login signalwire password $signalwire_token" > /etc/apt/auth.conf
     echo "deb [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ `lsb_release -sc` main" > /etc/apt/sources.list.d/freeswitch.list
     echo "deb-src [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ `lsb_release -sc` main" >> /etc/apt/sources.list.d/freeswitch.list
 
     apt-get update
-    apt-get install -y gdb ntp
     apt-get install -y freeswitch-meta-bare freeswitch-conf-vanilla freeswitch-mod-commands freeswitch-mod-console freeswitch-mod-logfile
     apt-get install -y freeswitch-lang-en freeswitch-mod-say-en freeswitch-sounds-en-us-callie
 #    apt-get install -y freeswitch-sounds-es-ar-mario freeswitch-mod-say-es freeswitch-mod-say-es-ar
@@ -339,6 +352,7 @@ fi
 
 if [[ $freeswitch_method == "src" ]]
 then
+    apt-get install -y gdb
     apt-get install -y autoconf automake devscripts g++ git-core libncurses5-dev libtool make libjpeg-dev
     apt-get install -y pkg-config flac  libgdbm-dev libdb-dev gettext equivs mlocate dpkg-dev libpq-dev
     apt-get install -y liblua5.2-dev libtiff5-dev libperl-dev libcurl4-openssl-dev libsqlite3-dev libpcre3-dev
@@ -346,8 +360,9 @@ then
     apt-get install -y libshout3-dev libmpg123-dev libmp3lame-dev yasm nasm libsndfile1-dev libuv1-dev libvpx-dev
     apt-get install -y libavformat-dev libswscale-dev libvlc-dev python3-distutils
     apt-get install -y uuid-dev
-    # Bullseye specific
-    apt-get install -y libvpx6 swig4.0
+    # Bookworm specific
+    apt-get install -y libvpx7 swig4.0
+    apt-get install -y librabbitmq4
 
     cwd=$(pwd)
 
@@ -398,6 +413,7 @@ then
     sed -i "s/#languages\/mod_python3/languages\/mod_python3/g" build/modules.conf.in
 
     sed -i "s/#xml_int\/mod_xml_curl/xml_int\/mod_xml_curl/g" build/modules.conf.in
+    sed -i "s/#event_handlers\/mod_amqp/event_handlers\/mod_amqp/g" build/modules.conf.in
 
     sed -i "s/#formats\/mod_shout/formats\/mod_shout/g" build/modules.conf.in
 
@@ -755,6 +771,27 @@ service uwsgi stop
 
 
 ###############################################
+# RabbitMQ
+###############################################
+if [[ $install_rabbitmq_local == "yes" ]]
+then
+    apt-get install -y rabbitmq-server
+    rabbitmq-plugins enable rabbitmq_management
+    if [[ $rabbitmq_password == "random" ]]
+    then
+        echo "Generating random rabbitMQ pasword... "
+        rabbitmq_password=$(cat /proc/sys/kernel/random/uuid | md5sum | head -c 20)
+    fi
+    echo "Waiting for RabbitMQ..."
+    /usr/bin/sleep 5
+    rabbitmqctl change_password guest $rabbitmq_password
+    rabbitmqctl add_user djangopbx $rabbitmq_password
+    rabbitmqctl set_permissions -p / "djangopbx" ".*" ".*" ".*"
+fi
+echo "RabbitMQ Password" >> /root/djangopbx-passwords.txt
+echo $rabbitmq_password >> /root/djangopbx-passwords.txt
+
+###############################################
 # Set up passwords, session expiry etc.
 ###############################################
 
@@ -854,6 +891,8 @@ pbx_prompt n "Load Default Settings? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
+    sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updatedefaultsetting --category cluster --subcategory switch_name_1 --value $HOSTNAME"
+    sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updatedefaultsetting --category cluster --subcategory message_broker_password --value $rabbitmq_password"
 fi
 
 pbx_prompt n "Load Default Provision Settings? "
