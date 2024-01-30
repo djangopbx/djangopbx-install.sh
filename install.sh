@@ -43,18 +43,23 @@ domain_name=.mydomain.com
 # and the superuser will be assigned to it.
 default_domain_name=admin.mydomain.com
 
-# Freeswitch method can be src or pkg
+# FreeSWITCH method can be src or pkg
 #   if pkg is seclected then you must frovide a signalwire token.
 freeswitch_method=src
 signalwire_token=None
-
-# Loading Default Data
-#  if set to "yes", default data sets will be loaded without prompting.
-skip_prompts="no"
+# FreeSWITCH building options
+use_no_of_cpus="no"
+mod_signalwire="no"
+mod_skinny="no"
+mod_verto="no"
 
 # Software versions
 freeswitch_version=1.10.11
 sofia_version=1.13.17
+
+# Loading Default Data
+#  if set to "yes", default data sets will be loaded without prompting.
+skip_prompts="no"
 
 # Monitoring Options
 install_nagios_nrpe="no"
@@ -69,6 +74,7 @@ freeswitch_stand_alone="no"
 djangopbx_stand_alone="no"
 
 ########################### Configuration End ################################
+##############################################################################
 
 ###################### Define Installer Functions ############################
 pbx_prompt() {
@@ -212,8 +218,10 @@ apt-get install -y dnsutils
 apt-get install -y sudo
 apt-get install -y gunpg
 apt-get install -y gnupg2
+apt-get install -y unzip
 apt-get install -y m4
 apt-get install -y ntp
+apt-get install -y sox
 apt-get install -y python3-nftables
 apt-get install -y wget
 apt-get install -y htop
@@ -222,6 +230,8 @@ apt-get install -y libpq-dev
 apt-get install -y python3-pip
 apt-get install -y python3-dev
 apt-get install -y python3-daemon
+apt-get install -y sqlite3
+
 
 echo -e "${c_green}You are about to create a new user called django-pbx, please use a strong, secure password."
 echo -e $c_yellow
@@ -359,12 +369,30 @@ then
     apt-get install -y devscripts libspeexdsp-dev libspeex-dev libldns-dev libedit-dev libopus-dev libmemcached-dev
     apt-get install -y libshout3-dev libmpg123-dev libmp3lame-dev yasm nasm libsndfile1-dev libuv1-dev libvpx-dev
     apt-get install -y libavformat-dev libswscale-dev libvlc-dev python3-distutils
+    apt-get install -y cmake
     apt-get install -y uuid-dev
     # Bookworm specific
     apt-get install -y libvpx7 swig4.0
     apt-get install -y librabbitmq4
 
     cwd=$(pwd)
+
+    # libks
+    if [[ $mod_signalwire == "yes" ]]
+    then
+        cd /usr/src
+        git clone https://github.com/signalwire/libks.git libks
+        cd libks
+        cmake .
+        if [[ $use_no_of_cpus == "yes" ]]
+        then
+            make -j $(getconf _NPROCESSORS_ONLN)
+        else
+            make
+        fi
+        make install
+        export C_INCLUDE_PATH=/usr/include/libks
+    fi
 
     # sofia-sip
     cd /usr/src
@@ -376,7 +404,12 @@ then
     cd sofia-sip
     sh autogen.sh
     ./configure
-    make
+    if [[ $use_no_of_cpus == "yes" ]]
+    then
+        make -j $(getconf _NPROCESSORS_ONLN)
+    else
+        make
+    fi
     make install
 
     # spandsp
@@ -386,7 +419,12 @@ then
     git reset --hard 0d2e6ac65e0e8f53d652665a743015a88bf048d4
     sh autogen.sh
     ./configure
-    make
+    if [[ $use_no_of_cpus == "yes" ]]
+    then
+        make -j $(getconf _NPROCESSORS_ONLN)
+    else
+        make
+    fi
     make install
     ldconfig
 
@@ -398,10 +436,25 @@ then
     mv freeswitch-$freeswitch_version freeswitch
     cd freeswitch
 
-    # disable mod_signalwire, mod_skinny, and mod_verto from building
-    sed -i "s/applications\/mod_signalwire/#applications\/mod_signalwire/g" build/modules.conf.in
-    sed -i "s/endpoints\/mod_skinny/#endpoints\/mod_skinny/g" build/modules.conf.in
-    sed -i "s/endpoints\/mod_verto/#endpoints\/mod_verto/g" build/modules.conf.in
+    # disable or enable mod_signalwire, mod_skinny, and mod_verto from building
+    if [[ $mod_signalwire == "yes" ]]
+    then
+        sed -i "s/#applications\/mod_signalwire/applications\/mod_signalwire/g" build/modules.conf.in
+    else
+        sed -i "s/applications\/mod_signalwire/#applications\/mod_signalwire/g" build/modules.conf.in
+    fi
+    if [[ $mod_skinny == "yes" ]]
+    then
+        sed -i "s/#endpoints\/mod_skinny/endpoints\/mod_skinny/g" build/modules.conf.in
+    else
+        sed -i "s/endpoints\/mod_skinny/#endpoints\/mod_skinny/g" build/modules.conf.in
+    fi
+    if [[ $mod_verto == "yes" ]]
+    then
+        sed -i "s/#endpoints\/mod_verto/endpoints\/mod_verto/g" build/modules.conf.in
+    else
+        sed -i "s/endpoints\/mod_verto/#endpoints\/mod_verto/g" build/modules.conf.in
+    fi
 
     # enable some other modules that are disabled by default
     sed -i "s/#applications\/mod_callcenter/applications\/mod_callcenter/g" build/modules.conf.in
@@ -426,7 +479,12 @@ then
     --localstatedir=/var --sysconfdir=/etc --with-openssl --enable-core-pgsql-support
 
     # compile and install
-    make
+    if [[ $use_no_of_cpus == "yes" ]]
+    then
+        make -j $(getconf _NPROCESSORS_ONLN)
+    else
+        make
+    fi
     make install
     make sounds-install moh-install
     make hd-sounds-install hd-moh-install
@@ -442,11 +500,17 @@ then
     pbx_prompt n "Build and install mod_bcg729? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
-    apt-get install -y cmake
-    cd /usr/src
-    git clone https://github.com/xadhoom/mod_bcg729.git
-    cd mod_bcg729
-    make && make install
+        apt-get install -y cmake
+        cd /usr/src
+        git clone https://github.com/xadhoom/mod_bcg729.git
+        cd mod_bcg729
+        if [[ $use_no_of_cpus == "yes" ]]
+        then
+            make -j $(getconf _NPROCESSORS_ONLN)
+        else
+            make
+        fi
+        make install
     fi
 
     cd $cwd
