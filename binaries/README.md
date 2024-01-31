@@ -7,7 +7,7 @@ There is currently no Debian package available for the royalty free
 version of the G.729 codec.
 A compiled version is available here:
 
-Thsi module was compiled on a Debian 12.4 Operating system (x86-64 GLIBC_2.2.5)
+This module was compiled on a Debian 12.4 Operating system (x86-64 GLIBC_2.2.5)
 Details of the build process given below:
 
 ```sh
