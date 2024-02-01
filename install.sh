@@ -664,8 +664,7 @@ echo "fi" >> /home/django-pbx/.bashrc
 pbx_prompt n "Use requirements.txt to install dependencies (recommended)? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    cp requirements.txt /home/django-pbx/pbx
-    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install -r requirements.txt'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install -r /home/django-pbx/pbx/requirements.txt'
 else
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install psycopg2'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install Django'
