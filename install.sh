@@ -693,6 +693,7 @@ else
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install xmltodict'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install regex'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install python-ipware'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install pika'
 fi
 
 ###############################################
