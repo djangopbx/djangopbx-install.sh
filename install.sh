@@ -66,7 +66,7 @@ install_nagios_nrpe="no"
 
 # Scaling and Clustering Options
 postgresql_local="yes"
-freswitch_core_in_postgres="no"
+freeswitch_core_in_postgres="no"
 install_rabbitmq_local="no"
 rabbitmq_password="random"
 postgresql_stand_alone="no"
@@ -349,9 +349,6 @@ then
     apt-get install -y freeswitch-mod-voicemail
     apt-get install -y libyuv-dev
 
-    # make sure that postgresql is started before starting freeswitch
-    sed -i /lib/systemd/system/freeswitch.service -e s:'local-fs.target:local-fs.target postgresql.service:'
-
     # remove the music package to protect music on hold from package updates
     mv /usr/share/freeswitch/sounds/music/* /home/django-pbx/media/fs/music/default
     apt-get remove -y freeswitch-music-default
@@ -609,19 +606,19 @@ WantedBy=multi-user.target
 
 EOF
 
-pbx_prompt n "Move FreeSWITCH Sqlite files to RAM disk? "
-if [[ $REPLY =~ ^[Yy]$ ]]
+if [[ $freeswitch_core_in_postgres == "no" ]]
 then
-
-    mkdir -p /var/lib/freeswitch/db
-    chmod 777 /var/lib/freeswitch/db
-    chown -R django-pbx:django-pbx /var/lib/freeswitch/db
-    echo "# DjangoPBX for Freeswitch DB" >> /etc/fstab
-    echo "tmpfs /var/lib/freeswitch/db tmpfs defaults 0 0" >> /etc/fstab
-    mount -t tmpfs -o size=64m fsramdisk /var/lib/freeswitch/db
-
+    pbx_prompt n "Move FreeSWITCH Sqlite files to RAM disk? "
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        mkdir -p /var/lib/freeswitch/db
+        chmod 777 /var/lib/freeswitch/db
+        chown -R django-pbx:django-pbx /var/lib/freeswitch/db
+        echo "# DjangoPBX for Freeswitch DB" >> /etc/fstab
+        echo "tmpfs /var/lib/freeswitch/db tmpfs defaults 0 0" >> /etc/fstab
+        mount -t tmpfs -o size=64m fsramdisk /var/lib/freeswitch/db
+    fi
 fi
-
 
 ###############################################
 # Sudoers
@@ -976,6 +973,21 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendorfunctions.json'
+fi
+
+###############################################
+# Freeswitch core DB in postgreSql
+###############################################
+if [[ $freeswitch_core_in_postgres == "yes" ]]
+then
+    echo " "
+    echo "Updating Switch DSNs..."
+    sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updateswitchvariable --category DSN --name dsn --value \"pgsql://hostaddr=127.0.0.1 dbname=freeswitch user=freeswitch password='${database_password}'\""
+    sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updateswitchvariable --category DSN --name dsn_callcentre --value \"pgsql://hostaddr=127.0.0.1 dbname=freeswitch user=freeswitch password='${database_password}'\""
+    sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updateswitchvariable --category DSN --name dsn_voicemail --value \"pgsql://hostaddr=127.0.0.1 dbname=freeswitch user=freeswitch password='${database_password}'\""
+    sed -r -i 's/<!-- (<param name="core-db-dsn" value="\$\$\{dsn\}" \/>) -->/\1/g' /home/django-pbx/freeswitch/autoload_configs/switch.conf.xml
+    sed -r -i 's/<!--(<param name="odbc-dsn" value="\$\$\{dsn\}"\/>)-->/\1/g' /home/django-pbx/freeswitch/autoload_configs/voicemail.conf.xml
+    sed -r -i 's/(<param name="dbname" value="\/var\/lib\/freeswitch\/vm_db\/voicemail_default.db"\/>)/<!--\1-->/g' /home/django-pbx/freeswitch/autoload_configs/voicemail.conf.xml
 fi
 
 ###############################################
