@@ -998,6 +998,7 @@ then
     sed -r -i 's/<!--(<param name="odbc-dsn" value="\$\$\{dsn\}"\/>)-->/\1/g' /home/django-pbx/freeswitch/autoload_configs/db.conf.xml
     sed -r -i 's/(<param name="dbname" value="\/var\/lib\/freeswitch\/vm_db\/voicemail_default.db"\/>)/<!--\1-->/g' /home/django-pbx/freeswitch/autoload_configs/voicemail.conf.xml
     sudo -u postgres psql -d djangopbx -c "update pbx_sip_profile_settings set enabled = 'true' where name = 'odbc-dsn';"
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py writeoutswitchvars'
 fi
 
 ###############################################
