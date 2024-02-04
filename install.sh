@@ -261,6 +261,9 @@ cd $cwd
 ###############################################
 #Since Buster, Debian has nft dy befault, we now use this rather than the legacy iptables.
 
+echo " "
+echo "Removing UFW is it exists..."
+apt purge ufw
 cp /home/django-pbx/pbx/pbx/resources/etc/nftables.conf /etc/nftables.conf
 chmod 755 /etc/nftables.conf
 chown root:root /etc/nftables.conf
@@ -303,7 +306,7 @@ apt-get install -y postgresql
 cwd=$(pwd)
 cd /tmp
 
-#add the databases, users and grant permissions to them
+# add the databases, users and grant permissions to them
 sudo -u postgres psql -c "CREATE DATABASE djangopbx;";
 sudo -u postgres psql -c "CREATE DATABASE freeswitch;";
 sudo -u postgres psql -c "CREATE ROLE djangopbx WITH SUPERUSER LOGIN PASSWORD '$database_password';"
@@ -312,7 +315,8 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE djangopbx to djangopb
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to freeswitch;"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to djangopbx;"
 sudo -u postgres psql -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
-
+# create the freeswitch schema
+sudo -u postgres psql -d freeswitch -1 -f /home/django-pbx/pbx/switch/resources/templates/sql/switch.sql
 cd $cwd
 
 
@@ -889,26 +893,26 @@ sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx
 ###############################################
 sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user 1"
 
-pbx_prompt n "Load Default Access controls? "
+pbx_prompt $skip_prompts "Load Default Access controls? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrol.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrolnode.json'
 fi
 
-pbx_prompt n "Load Default Email Templates? "
+pbx_prompt $skip_prompts "Load Default Email Templates? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch emailtemplate.json'
 fi
 
-pbx_prompt n "Load Default Modules data? "
+pbx_prompt $skip_prompts "Load Default Modules data? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch modules.json'
 fi
 
-pbx_prompt n "Load Default SIP profiles? "
+pbx_prompt $skip_prompts "Load Default SIP profiles? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofile.json'
@@ -916,27 +920,27 @@ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofilesetting.json'
 fi
 
-pbx_prompt n "Load Default Switch Variables? "
+pbx_prompt $skip_prompts "Load Default Switch Variables? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch switchvariable.json'
 fi
 
-pbx_prompt n "Load Default Music on Hold data? "
+pbx_prompt $skip_prompts "Load Default Music on Hold data? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musiconhold.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
 fi
 
-pbx_prompt n "Load Number Translation data? "
+pbx_prompt $skip_prompts "Load Number Translation data? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslations.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslationdetails.json'
 fi
 
-pbx_prompt n "Load Conference Settings? "
+pbx_prompt $skip_prompts "Load Conference Settings? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontrols.json'
@@ -948,7 +952,7 @@ fi
 ###############################################
 # Default Settings
 ###############################################
-pbx_prompt n "Load Default Settings? "
+pbx_prompt $skip_prompts "Load Default Settings? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
@@ -956,19 +960,19 @@ then
     sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updatedefaultsetting --category cluster --subcategory message_broker_password --value $rabbitmq_password"
 fi
 
-pbx_prompt n "Load Default Provision Settings? "
+pbx_prompt $skip_prompts "Load Default Provision Settings? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision commonprovisionsettings.json'
 fi
 
-pbx_prompt n "Load Yealink Provision Settings? "
+pbx_prompt $skip_prompts "Load Yealink Provision Settings? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision yealinkprovisionsettings.json'
 fi
 
-pbx_prompt n "Load Yealink vendor provision data? "
+pbx_prompt $skip_prompts "Load Yealink vendor provision data? "
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
@@ -986,8 +990,13 @@ then
     sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updateswitchvariable --category DSN --name dsn_callcentre --value \"pgsql://hostaddr=127.0.0.1 dbname=freeswitch user=freeswitch password='${database_password}'\""
     sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updateswitchvariable --category DSN --name dsn_voicemail --value \"pgsql://hostaddr=127.0.0.1 dbname=freeswitch user=freeswitch password='${database_password}'\""
     sed -r -i 's/<!-- (<param name="core-db-dsn" value="\$\$\{dsn\}" \/>) -->/\1/g' /home/django-pbx/freeswitch/autoload_configs/switch.conf.xml
+    sed -r -i 's/<!-- (<param name="auto-create-schemas" value="false"\/>) -->/\1/g' /home/django-pbx/freeswitch/autoload_configs/switch.conf.xml
+    sed -r -i 's/<!-- (<param name="auto-clear-sql" value="false"\/>) -->/\1/g' /home/django-pbx/freeswitch/autoload_configs/switch.conf.xml
     sed -r -i 's/<!--(<param name="odbc-dsn" value="\$\$\{dsn\}"\/>)-->/\1/g' /home/django-pbx/freeswitch/autoload_configs/voicemail.conf.xml
+    sed -r -i 's/<!--(<param name="odbc-dsn" value="\$\$\{dsn\}"\/>)-->/\1/g' /home/django-pbx/freeswitch/autoload_configs/fifo.conf.xml
+    sed -r -i 's/<!--(<param name="odbc-dsn" value="\$\$\{dsn\}"\/>)-->/\1/g' /home/django-pbx/freeswitch/autoload_configs/db.conf.xml
     sed -r -i 's/(<param name="dbname" value="\/var\/lib\/freeswitch\/vm_db\/voicemail_default.db"\/>)/<!--\1-->/g' /home/django-pbx/freeswitch/autoload_configs/voicemail.conf.xml
+    sudo -u postgres psql -d djangopbx -c "update pbx_sip_profile_settings set enabled = 'true' where name = 'odbc-dsn';"
 fi
 
 ###############################################
