@@ -375,6 +375,7 @@ then
     # Bookworm specific
     apt-get install -y libvpx7 swig4.0
     apt-get install -y librabbitmq4
+    apt-get install -y librabbitmq-dev
 
     cwd=$(pwd)
 
