@@ -903,7 +903,7 @@ sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx
 ###############################################
 # Basic Data loading
 ###############################################
-sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user 1"
+sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user ${core_sequence_start}"
 
 pbx_prompt $skip_prompts "Load Default Access controls? "
 if [[ $REPLY =~ ^[Yy]$ ]]
