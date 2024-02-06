@@ -72,6 +72,8 @@ rabbitmq_password="random"
 postgresql_stand_alone="no"
 freeswitch_stand_alone="no"
 djangopbx_stand_alone="no"
+core_sequence_increment=10
+core_sequence_start=1001
 
 ########################### Configuration End ################################
 ##############################################################################
@@ -881,6 +883,15 @@ sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx
 echo " "
 echo "Loading user groups..."
 sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
+echo " "
+echo "Setting Django Core Sequences..."
+sudo -u postgres psql -d djangopbx -c "alter sequence if exists auth_group_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+sudo -u postgres psql -d djangopbx -c "alter sequence if exists auth_permission_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+sudo -u postgres psql -d djangopbx -c "alter sequence if exists auth_user_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+sudo -u postgres psql -d djangopbx -c "alter sequence if exists django_admin_log_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+sudo -u postgres psql -d djangopbx -c "alter sequence if exists django_content_type_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+sudo -u postgres psql -d djangopbx -c "alter sequence if exists pbx_users_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+
 sleep 1
 echo -e $c_green
 echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
