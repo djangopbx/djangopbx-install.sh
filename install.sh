@@ -224,7 +224,6 @@ apt-get install -y unzip
 apt-get install -y m4
 apt-get install -y ntp
 apt-get install -y sox
-apt-get install -y python3-nftables
 apt-get install -y wget
 apt-get install -y htop
 apt-get install -y curl memcached haveged apt-transport-https
@@ -266,6 +265,11 @@ cd $cwd
 echo " "
 echo "Removing UFW is it exists..."
 apt purge ufw
+echo " "
+echo "Installing nftables..."
+apt-get install -y nftables
+apt-get install -y python3-nftables
+
 cp /home/django-pbx/pbx/pbx/resources/etc/nftables.conf /etc/nftables.conf
 chmod 755 /etc/nftables.conf
 chown root:root /etc/nftables.conf
