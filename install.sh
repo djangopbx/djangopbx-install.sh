@@ -224,6 +224,7 @@ apt-get install -y unzip
 apt-get install -y m4
 apt-get install -y ntp
 apt-get install -y sox
+apt-get install -y lame
 apt-get install -y wget
 apt-get install -y htop
 apt-get install -y curl memcached haveged apt-transport-https
