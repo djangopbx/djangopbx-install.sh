@@ -68,6 +68,7 @@ install_nagios_nrpe="no"
 postgresql_local="yes"
 freeswitch_core_in_postgres="no"
 install_rabbitmq_local="no"
+use_rabbitmq_broker="no"
 rabbitmq_password="random"
 postgresql_stand_alone="no"
 freeswitch_stand_alone="no"
@@ -844,7 +845,7 @@ service uwsgi stop
 
 
 ###############################################
-# RabbitMQ
+# RabbitMQ Local
 ###############################################
 if [[ $install_rabbitmq_local == "yes" ]]
 then
@@ -863,6 +864,36 @@ then
 fi
 echo "RabbitMQ Password" >> /root/djangopbx-passwords.txt
 echo $rabbitmq_password >> /root/djangopbx-passwords.txt
+
+###############################################
+# Use RabbitMQ
+###############################################
+if [[ $use_rabbitmq_broker == "yes" ]]
+then
+cat << \EOF > /lib/systemd/system/pbx-event-receiver.service
+;;;;; Author: Adrian Fretwell <adrian@djangopbx.com>
+
+[Unit]
+Description=PBX Event Receiver
+Wants=network-online.target
+Requires=network.target local-fs.target postgresql.service
+After=network.target network-online.target local-fs.target postgresql.service memcached.service
+
+[Service]
+; service
+Type=simple
+User=django-pbx
+WorkingDirectory=/home/django-pbx/pbx
+ExecStart=/home/django-pbx/envdpbx/bin/python manage.py eventreceiver
+TimeoutSec=45s
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
+/usr/bin/systemctl enable pbx-event-receiver.service
+fi
 
 ###############################################
 # Set up passwords, session expiry etc.
