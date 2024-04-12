@@ -35,6 +35,7 @@
 #  Passwords
 database_password=random
 system_password=random
+rabbitmq_password=random
 
 # Domain name, use leading dot for wildcard
 domain_name=.mydomain.com
@@ -65,14 +66,12 @@ skip_prompts="no"
 install_nagios_nrpe="no"
 
 # Scaling and Clustering Options
-postgresql_local="yes"
 freeswitch_core_in_postgres="no"
-install_rabbitmq_local="no"
 use_rabbitmq_broker="no"
-rabbitmq_password="random"
-postgresql_stand_alone="no"
-freeswitch_stand_alone="no"
-djangopbx_stand_alone="no"
+install_rabbitmq_local="no"
+install_postgresql_local="yes"
+install_freeswitch_local="yes"
+install_djangopbx_local="yes"
 core_sequence_increment=10
 core_sequence_start=1001
 
@@ -249,7 +248,11 @@ mkdir -p /home/django-pbx/media/fs/music/default
 mkdir -p /home/django-pbx/media/fs/recordings
 mkdir -p /home/django-pbx/media/fs/voicemail
 chown -R django-pbx:django-pbx /home/django-pbx/media
-
+mkdir -p /home/django-pbx/cache
+chown django-pbx:django-pbx /home/django-pbx/cache
+touch /home/django-pbx/.ssh/authorized_keys
+chmod 600 /home/django-pbx/.ssh/authorized_keys
+chown django-pbx:django-pbx /home/django-pbx/.ssh/authorized_keys
 
 cwd=$(pwd)
 cd /tmp
@@ -285,7 +288,7 @@ If you are connected via ssh or similar your IP address should be shown in
 the output of the who am i command shown below:
 
 EOF
-echo -en $c_white 
+echo -en $c_white
 who am i
 echo -e $c_green
 cat << EOF
@@ -308,32 +311,34 @@ fi
 ###############################################
 # PostgreSQL
 ###############################################
+if [[ $install_postgresql_local == "yes" ]]
+then
+    apt-get install -y postgresql
 
-apt-get install -y postgresql
+    cwd=$(pwd)
+    cd /tmp
 
-cwd=$(pwd)
-cd /tmp
-
-# add the databases, users and grant permissions to them
-sudo -u postgres psql -c "CREATE DATABASE djangopbx;";
-sudo -u postgres psql -c "CREATE DATABASE freeswitch;";
-sudo -u postgres psql -c "CREATE ROLE djangopbx WITH SUPERUSER LOGIN PASSWORD '$database_password';"
-sudo -u postgres psql -c "CREATE ROLE freeswitch WITH SUPERUSER LOGIN PASSWORD '$database_password';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE djangopbx to djangopbx;"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to freeswitch;"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to djangopbx;"
-sudo -u postgres psql -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
-# create the freeswitch schema
-sudo -u postgres psql -d freeswitch -1 -f /home/django-pbx/pbx/switch/resources/templates/sql/switch.sql
-cd $cwd
-
+    # add the databases, users and grant permissions to them
+    sudo -u postgres psql -c "CREATE DATABASE djangopbx;";
+    sudo -u postgres psql -c "CREATE DATABASE freeswitch;";
+    sudo -u postgres psql -c "CREATE ROLE djangopbx WITH SUPERUSER LOGIN PASSWORD '$database_password';"
+    sudo -u postgres psql -c "CREATE ROLE freeswitch WITH SUPERUSER LOGIN PASSWORD '$database_password';"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE djangopbx to djangopbx;"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to freeswitch;"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE freeswitch to djangopbx;"
+    sudo -u postgres psql -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+    # create the freeswitch schema
+    sudo -u postgres psql -d freeswitch -1 -f /home/django-pbx/pbx/switch/resources/templates/sql/switch.sql
+    cd $cwd
+fi
 
 ###############################################
 # FreeSWITCH
 ###############################################
-
-if [[ $freeswitch_method == "pkg" ]]
+if [[ $install_freeswitch_local == "yes" ]]
 then
+ if [[ $freeswitch_method == "pkg" ]]
+ then
     wget --http-user=signalwire --http-password=$signalwire_token -O /usr/share/keyrings/signalwire-freeswitch-repo.gpg https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg
     echo "machine freeswitch.signalwire.com login signalwire password $signalwire_token" > /etc/apt/auth.conf
     echo "deb [signed-by=/usr/share/keyrings/signalwire-freeswitch-repo.gpg] https://freeswitch.signalwire.com/repo/deb/debian-release/ `lsb_release -sc` main" > /etc/apt/sources.list.d/freeswitch.list
@@ -342,8 +347,8 @@ then
     apt-get update
     apt-get install -y freeswitch-meta-bare freeswitch-conf-vanilla freeswitch-mod-commands freeswitch-mod-console freeswitch-mod-logfile
     apt-get install -y freeswitch-lang-en freeswitch-mod-say-en freeswitch-sounds-en-us-callie
-#    apt-get install -y freeswitch-sounds-es-ar-mario freeswitch-mod-say-es freeswitch-mod-say-es-ar
-#    apt-get install -y freeswitch-sounds-fr-ca-june freeswitch-mod-say-fr
+ #   apt-get install -y freeswitch-sounds-es-ar-mario freeswitch-mod-say-es freeswitch-mod-say-es-ar
+ #   apt-get install -y freeswitch-sounds-fr-ca-june freeswitch-mod-say-fr
     apt-get install -y freeswitch-mod-enum freeswitch-mod-cdr-csv freeswitch-mod-event-socket freeswitch-mod-sofia freeswitch-mod-sofia-dbg freeswitch-mod-loopback
     apt-get install -y freeswitch-mod-conference freeswitch-mod-db freeswitch-mod-dptools freeswitch-mod-expr freeswitch-mod-fifo freeswitch-mod-httapi
     apt-get install -y freeswitch-mod-hash freeswitch-mod-esl freeswitch-mod-esf freeswitch-mod-fsv freeswitch-mod-valet-parking freeswitch-mod-dialplan-xml freeswitch-dbg
@@ -359,6 +364,7 @@ then
     apt-get install -y freeswitch-mod-xml-curl
     apt-get install -y freeswitch-music-default
     apt-get install -y freeswitch-mod-voicemail
+    apt-get install -y freeswitch-mod-http-cache
     apt-get install -y libyuv-dev
 
     # remove the music package to protect music on hold from package updates
@@ -367,10 +373,10 @@ then
     ln -s /home/django-pbx/media/fs/music /usr/share/freeswitch/sounds/music
 
     chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
-fi
+ fi
 
-if [[ $freeswitch_method == "src" ]]
-then
+ if [[ $freeswitch_method == "src" ]]
+ then
     apt-get install -y gdb
     apt-get install -y autoconf automake devscripts g++ git-core libncurses5-dev libtool make libjpeg-dev
     apt-get install -y pkg-config flac  libgdbm-dev libdb-dev gettext equivs mlocate dpkg-dev libpq-dev
@@ -472,6 +478,7 @@ then
     sed -i "s/#applications\/mod_memcache/applications\/mod_memcache/g" build/modules.conf.in
     sed -i "s/#applications\/mod_curl/applications\/mod_curl/g" build/modules.conf.in
     sed -i "s/#applications\/mod_nibblebill/applications\/mod_nibblebill/g" build/modules.conf.in
+    sed -i "s/#applications\/mod_http_cache/applications\/mod_http_cache/g" build/modules.conf.in
 
     sed -i "s/#languages\/mod_python3/languages\/mod_python3/g" build/modules.conf.in
 
@@ -524,36 +531,36 @@ then
     fi
 
     cd $cwd
-fi
+ fi
 
-# move recordings and voicemail
-rmdir /var/lib/freeswitch/recordings
-ln -s /home/django-pbx/media/fs/recordings /var/lib/freeswitch/recordings
-mkdir -p /var/lib/freeswitch/storage
-rm -rf /var/lib/freeswitch/storage/voicemail
-ln -s /home/django-pbx/media/fs/voicemail /var/lib/freeswitch/storage/voicemail
-mkdir -p /var/lib/freeswitch/storage/voicemail/default
-chown django-pbx:django-pbx /var/lib/freeswitch/storage/voicemail/default
+ # move recordings and voicemail
+ rmdir /var/lib/freeswitch/recordings
+ ln -s /home/django-pbx/media/fs/recordings /var/lib/freeswitch/recordings
+ mkdir -p /var/lib/freeswitch/storage
+ rm -rf /var/lib/freeswitch/storage/voicemail
+ ln -s /home/django-pbx/media/fs/voicemail /var/lib/freeswitch/storage/voicemail
+ mkdir -p /var/lib/freeswitch/storage/voicemail/default
+ chown django-pbx:django-pbx /var/lib/freeswitch/storage/voicemail/default
 
-# setup /etc/freeswitch/directory
-# just incase it does not exist for any reason
-mkdir -p /etc/freeswitch
-cp -r /etc/freeswitch/ /home/django-pbx/freeswitch/
-mv /etc/freeswitch /etc/freeswitch.orig
-rm -r /home/django-pbx/freeswitch/autoload_configs
-rm -r /home/django-pbx/freeswitch/dialplan
-rm -r /home/django-pbx/freeswitch/chatplan
-rm -r /home/django-pbx/freeswitch/directory
-rm -r /home/django-pbx/freeswitch/sip_profiles
-cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
-chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
+ # setup /etc/freeswitch/directory
+ # just incase it does not exist for any reason
+ mkdir -p /etc/freeswitch
+ cp -r /etc/freeswitch/ /home/django-pbx/freeswitch/
+ mv /etc/freeswitch /etc/freeswitch.orig
+ rm -r /home/django-pbx/freeswitch/autoload_configs
+ rm -r /home/django-pbx/freeswitch/dialplan
+ rm -r /home/django-pbx/freeswitch/chatplan
+ rm -r /home/django-pbx/freeswitch/directory
+ rm -r /home/django-pbx/freeswitch/sip_profiles
+ cp -r /home/django-pbx/pbx/switch/resources/templates/conf/* /home/django-pbx/freeswitch
+ chown -R django-pbx:django-pbx /home/django-pbx/freeswitch
 
-# setup a directory for the voicemail DB that will not get lifted into a RAM disk
-mkdir -p /var/lib/freeswitch/vm_db
-chown -R django-pbx:django-pbx /var/lib/freeswitch/vm_db
+ # setup a directory for the voicemail DB that will not get lifted into a RAM disk
+ mkdir -p /var/lib/freeswitch/vm_db
+ chown -R django-pbx:django-pbx /var/lib/freeswitch/vm_db
 
 
-cat << \EOF > /lib/systemd/system/freeswitch.service
+ cat << \EOF > /lib/systemd/system/freeswitch.service
 ;;;;; Author: Travis Cross <tc@traviscross.com>
 ;;;;; Modified: Adrian Fretwell <adrian@djangopbx.com>
 
@@ -618,9 +625,18 @@ NoNewPrivileges=false
 WantedBy=multi-user.target
 
 EOF
+ if [[ $install_postgresql_local == "no" ]]
+ then
+    sed -i "s/postgresql.service //g" /lib/systemd/system/freeswitch.service
+ fi
+ if [[ $install_djangopbx_local == "no" ]]
+ then
+    sed -i "s/nginx.service //g" /lib/systemd/system/freeswitch.service
+    sed -i "s/uwsgi.service //g" /lib/systemd/system/freeswitch.service
+ fi
 
-if [[ $freeswitch_core_in_postgres == "no" ]]
-then
+ if [[ $freeswitch_core_in_postgres == "no" ]]
+ then
     pbx_prompt n "Move FreeSWITCH Sqlite files to RAM disk? "
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
@@ -631,6 +647,7 @@ then
         echo "tmpfs /var/lib/freeswitch/db tmpfs defaults 0 0" >> /etc/fstab
         mount -t tmpfs -o size=64m fsramdisk /var/lib/freeswitch/db
     fi
+ fi
 fi
 
 ###############################################
@@ -705,22 +722,25 @@ else
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install pika'
 fi
 
-###############################################
-# Set up Webserver
-###############################################
+if [[ $install_djangopbx_local == "yes" ]]
+then
 
-apt-get install -y nginx
-apt-get install -y uwsgi
-apt-get install -y uwsgi-plugin-python3
+ ###############################################
+ # Set up Webserver
+ ###############################################
 
-#remove the default site
-rm /etc/nginx/sites-enabled/default
+ apt-get install -y nginx
+ apt-get install -y uwsgi
+ apt-get install -y uwsgi-plugin-python3
 
-#add the static files directory
-mkdir -p /var/www/static
-chown django-pbx:django-pbx /var/www/static
+ #remove the default site
+ rm /etc/nginx/sites-enabled/default
 
-cat << EOF > /etc/uwsgi/apps-available/djangopbx.ini
+ #add the static files directory
+ mkdir -p /var/www/static
+ chown django-pbx:django-pbx /var/www/static
+
+ cat << EOF > /etc/uwsgi/apps-available/djangopbx.ini
 [uwsgi]
 plugins-dir = /usr/lib/uwsgi/plugins/
 plugin = python3
@@ -740,9 +760,10 @@ home = /home/django-pbx/envdpbx
 
 EOF
 
-ln -s /etc/uwsgi/apps-available/djangopbx.ini /etc/uwsgi/apps-enabled/djangopbx.ini
+ ln -s /etc/uwsgi/apps-available/djangopbx.ini /etc/uwsgi/apps-enabled/djangopbx.ini
+ sed -i "s/www-data/django-pbx/g" /etc/nginx/nginx.conf
 
-cat << EOF > /etc/uwsgi/apps-available/fs_config.ini
+ cat << EOF > /etc/uwsgi/apps-available/fs_config.ini
 [uwsgi]
 plugins-dir = /usr/lib/uwsgi/plugins/
 plugin = python3
@@ -762,14 +783,23 @@ home = /home/django-pbx/envdpbx
 
 EOF
 
-ln -s /etc/uwsgi/apps-available/fs_config.ini /etc/uwsgi/apps-enabled/fs_config.ini
+ ln -s /etc/uwsgi/apps-available/fs_config.ini /etc/uwsgi/apps-enabled/fs_config.ini
 
 
-# get the IP used to talk to the Internet
-my_ip=`ip route get 8.8.8.8 | sed -n '/src/{s/.*src *\([^ ]*\).*/\1/p;q}'`
-# enable DjangoPBX nginx config
-my_redirect='https://$host$request_uri;'
-cat << EOF > /etc/nginx/sites-available/djangopbx
+ # get the IP used to talk to the Internet
+ my_ip=`ip route get 8.8.8.8 | sed -n '/src/{s/.*src *\([^ ]*\).*/\1/p;q}'`
+ echo -e $c_green
+ echo "The installer has guessed your public IP address as the following:"
+ echo -en $c_white
+ echo $my_ip
+ echo -e $c_green
+ echo "If this is not what you want to use then please edit:"
+ echo "/etc/nginx/sites-available/djangopbx"
+ echo "After the installation has completed."
+ pbx_prompt n "Press any key to continue "
+ # enable DjangoPBX nginx config
+ my_redirect='https://$host$request_uri;'
+ cat << EOF > /etc/nginx/sites-available/djangopbx
 # the upstream component nginx needs to connect to
 upstream django {
     server unix:///home/django-pbx/pbx/django-pbx.sock; # for a file socket
@@ -794,13 +824,21 @@ server {
     listen ${my_ip}:80;
     server_name _;
 
-    return 301 ${my_redirect}
-
     access_log /var/log/nginx/access.log;
     error_log /var/log/nginx/error.log;
 
     client_max_body_size 80M;
     client_body_buffer_size 128k;
+
+    location /fsmedia {
+        alias /home/django-pbx/media/fs;
+        allow 127.0.0.1;
+        deny  all;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
 
 }
 
@@ -828,6 +866,12 @@ server {
         alias /var/www/static;
     }
 
+    location /fsmedia {
+        alias /home/django-pbx/media/fs;
+        allow 127.0.0.1;
+        deny  all;
+    }
+
     # Finally, send all non media/static requests to the Django server.
     location / {
         include     uwsgi_params;
@@ -838,10 +882,11 @@ server {
 
 EOF
 
-ln -s /etc/nginx/sites-available/djangopbx /etc/nginx/sites-enabled/djangopbx
+ ln -s /etc/nginx/sites-available/djangopbx /etc/nginx/sites-enabled/djangopbx
 
-service nginx stop
-service uwsgi stop
+ service nginx stop
+ service uwsgi stop
+fi
 
 
 ###############################################
@@ -909,129 +954,132 @@ sed -i "s/#\sSESSION_EXPIRE_AT_BROWSER_CLOSE\s=\sTrue/SESSION_EXPIRE_AT_BROWSER_
 sed -i "s/XXXXXXXX/${database_password}/g" /root/pbx-backup.sh
 sed -i "s/XXXXXXXX/${database_password}/g" /root/pbx-restore.sh
 
-cwd=$(pwd)
-cd /tmp
-
-# Perform initial steps on new DjangoPBX Django application
-echo " "
-echo "Performing migrations..."
-sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py migrate'
-echo " "
-echo "Loading user groups..."
-sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
-echo " "
-echo "Setting Django Core Sequences..."
-sudo -u postgres psql -d djangopbx -c "alter sequence if exists auth_group_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
-sudo -u postgres psql -d djangopbx -c "alter sequence if exists auth_permission_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
-sudo -u postgres psql -d djangopbx -c "alter sequence if exists auth_user_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
-sudo -u postgres psql -d djangopbx -c "alter sequence if exists django_admin_log_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
-sudo -u postgres psql -d djangopbx -c "alter sequence if exists django_content_type_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
-sudo -u postgres psql -d djangopbx -c "alter sequence if exists pbx_users_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
-
-sleep 1
-echo -e $c_green
-echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
-echo -e "Hint: Use the email format for the username e.g. <user@${default_domain_name}>"
-pbx_prompt n "Press any key to continue "
-sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
-sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py collectstatic'
-
-###############################################
-# Basic Data loading
-###############################################
-sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user ${core_sequence_start}"
-
-pbx_prompt $skip_prompts "Load Default Access controls? "
-if [[ $REPLY =~ ^[Yy]$ ]]
+if [[ $install_djangopbx_local == "yes" ]]
 then
+
+ cwd=$(pwd)
+ cd /tmp
+
+ # Perform initial steps on new DjangoPBX Django application
+ echo " "
+ echo "Performing migrations..."
+ sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py migrate'
+ echo " "
+ echo "Loading user groups..."
+ sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants group.json'
+ echo " "
+ echo "Setting Django Core Sequences..."
+ sudo -u postgres psql -d djangopbx -c "alter sequence if exists auth_group_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+ sudo -u postgres psql -d djangopbx -c "alter sequence if exists auth_permission_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+ sudo -u postgres psql -d djangopbx -c "alter sequence if exists auth_user_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+ sudo -u postgres psql -d djangopbx -c "alter sequence if exists django_admin_log_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+ sudo -u postgres psql -d djangopbx -c "alter sequence if exists django_content_type_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+ sudo -u postgres psql -d djangopbx -c "alter sequence if exists pbx_users_id_seq increment by ${core_sequence_increment} restart with ${core_sequence_start};"
+
+ sleep 1
+ echo -e $c_green
+ echo "You are about to create a superuser to manage DjangoPBX, please use a strong, secure password."
+ echo -e "Hint: Use the email format for the username e.g. <user@${default_domain_name}>"
+ pbx_prompt n "Press any key to continue "
+ sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createsuperuser'
+ sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py collectstatic'
+
+ ###############################################
+ # Basic Data loading
+ ###############################################
+ sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py createpbxdomain --domain ${default_domain_name} --user ${core_sequence_start}"
+
+ pbx_prompt $skip_prompts "Load Default Access controls? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrol.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch accesscontrolnode.json'
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Default Email Templates? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Default Email Templates? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch emailtemplate.json'
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Default Modules data? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Default Modules data? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch modules.json'
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Default SIP profiles? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Default SIP profiles? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofile.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofiledomain.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch sipprofilesetting.json'
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Default Switch Variables? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Default Switch Variables? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app switch switchvariable.json'
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Default Music on Hold data? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Default Music on Hold data? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold musiconhold.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app musiconhold mohfile.json'
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Number Translation data? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Number Translation data? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslations.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app numbertranslations numbertranslationdetails.json'
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Conference Settings? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Conference Settings? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontrols.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferencecontroldetails.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofiles.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app conferencesettings conferenceprofileparams.json'
-fi
+ fi
 
-###############################################
-# Default Settings
-###############################################
-pbx_prompt $skip_prompts "Load Default Settings? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ ###############################################
+ # Default Settings
+ ###############################################
+ pbx_prompt $skip_prompts "Load Default Settings? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
     sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updatedefaultsetting --category cluster --subcategory switch_name_1 --value $HOSTNAME"
     sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updatedefaultsetting --category cluster --subcategory message_broker_password --value $rabbitmq_password"
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Default Provision Settings? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Default Provision Settings? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision commonprovisionsettings.json'
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Yealink Provision Settings? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Yealink Provision Settings? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision yealinkprovisionsettings.json'
-fi
+ fi
 
-pbx_prompt $skip_prompts "Load Yealink vendor provision data? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ pbx_prompt $skip_prompts "Load Yealink vendor provision data? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendors.json'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app provision devicevendorfunctions.json'
-fi
+ fi
 
-###############################################
-# Freeswitch core DB in postgreSql
-###############################################
-if [[ $freeswitch_core_in_postgres == "yes" ]]
-then
+ ###############################################
+ # Freeswitch core DB in postgreSql
+ ###############################################
+ if [[ $freeswitch_core_in_postgres == "yes" ]]
+ then
     echo " "
     echo "Updating Switch DSNs..."
     sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updateswitchvariable --category DSN --name dsn --value \"pgsql://hostaddr=127.0.0.1 dbname=freeswitch user=freeswitch password='${database_password}'\""
@@ -1046,18 +1094,20 @@ then
     sed -r -i 's/(<param name="dbname" value="\/var\/lib\/freeswitch\/vm_db\/voicemail_default.db"\/>)/<!--\1-->/g' /home/django-pbx/freeswitch/autoload_configs/voicemail.conf.xml
     sudo -u postgres psql -d djangopbx -c "update pbx_sip_profile_settings set enabled = 'true' where name = 'odbc-dsn';"
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py writeoutswitchvars'
-fi
+ fi
 
-###############################################
-# Menu Defaults
-###############################################
-pbx_prompt n "Load Menu Defaults? "
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+ ###############################################
+ # Menu Defaults
+ ###############################################
+ pbx_prompt n "Load Menu Defaults? "
+ if [[ $REPLY =~ ^[Yy]$ ]]
+ then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py menudefaults'
-fi
+ fi
 
-cd $cwd
+ cd $cwd
+
+fi
 
 ###############################################
 # Set Up crontab
@@ -1084,11 +1134,17 @@ then
 fi
 
 systemctl daemon-reload
-systemctl start freeswitch
-systemctl enable freeswitch
 
-service uwsgi start
-service nginx start
+if [[ $install_freeswitch_local == "yes" ]]
+then
+    systemctl start freeswitch
+    systemctl enable freeswitch
+fi
+if [[ $install_djangopbx_local == "yes" ]]
+then
+    service uwsgi start
+    service nginx start
+fi
 
 echo -e $c_green
 cat << EOF
