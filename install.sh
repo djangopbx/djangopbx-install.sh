@@ -72,6 +72,7 @@ install_rabbitmq_local="no"
 install_postgresql_local="yes"
 install_freeswitch_local="yes"
 install_djangopbx_local="yes"
+install_remote_event_receiver="no"
 core_sequence_increment=10
 core_sequence_start=1001
 
@@ -307,6 +308,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]
 then
 nano /etc/nftables.conf
 fi
+cp /etc/nftables.conf /etc/nftables.conf.orig
 
 ###############################################
 # PostgreSQL
@@ -937,8 +939,34 @@ Restart=always
 WantedBy=multi-user.target
 
 EOF
-/usr/bin/systemctl enable pbx-event-receiver.service
 fi
+
+if [[ $install_remote_event_receiver == "yes" ]]
+then
+cat << \EOF > /lib/systemd/system/pbx-remote-event-receiver.service
+;;;;; Author: Adrian Fretwell <adrian@djangopbx.com>
+
+[Unit]
+Description=PBX Remote Event Receiver
+Wants=network-online.target
+Requires=network.target local-fs.target
+After=network.target network-online.target local-fs.target
+
+[Service]
+; service
+Type=simple
+User=django-pbx
+WorkingDirectory=/home/django-pbx/pbx/pbx/scripts
+ExecStart=/home/django-pbx/envdpbx/bin/python remote_event_receiver.py
+TimeoutSec=45s
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
+fi
+
 
 ###############################################
 # Set up passwords, session expiry etc.
@@ -1144,6 +1172,14 @@ if [[ $install_djangopbx_local == "yes" ]]
 then
     service uwsgi start
     service nginx start
+fi
+if [[ $use_rabbitmq_broker == "yes" ]]
+then
+/usr/bin/systemctl enable pbx-event-receiver.service
+fi
+if [[ $install_remote_event_receiver == "yes" ]]
+then
+/usr/bin/systemctl enable pbx-remote-event-receiver.service
 fi
 
 echo -e $c_green
