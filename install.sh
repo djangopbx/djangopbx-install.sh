@@ -917,11 +917,12 @@ echo $rabbitmq_password >> /root/djangopbx-passwords.txt
 ###############################################
 if [[ $use_rabbitmq_broker == "yes" ]]
 then
-cat << \EOF > /lib/systemd/system/pbx-event-receiver.service
+cat << \EOF > /lib/systemd/system/pbx_event_receiver@.service
 ;;;;; Author: Adrian Fretwell <adrian@djangopbx.com>
 
 [Unit]
-Description=PBX Event Receiver
+Description=PBX Event Receiver, instance %i
+PartOf=pbx_event_receiver.target
 Wants=network-online.target
 Requires=network.target local-fs.target postgresql.service
 After=network.target network-online.target local-fs.target postgresql.service memcached.service
@@ -934,6 +935,20 @@ WorkingDirectory=/home/django-pbx/pbx
 ExecStart=/home/django-pbx/envdpbx/bin/python manage.py eventreceiver
 TimeoutSec=45s
 Restart=always
+KillSignal=SIGINT
+
+[Install]
+WantedBy=pbx_event_receiver.target
+
+EOF
+cat << \EOF > /lib/systemd/system/pbx_event_receiver.target
+;;;;; Author: Adrian Fretwell <adrian@djangopbx.com>
+
+[Unit]
+Description=PBX Event Receiver serice
+Wants=network-online.target
+Requires=network.target local-fs.target postgresql.service
+After=network.target network-online.target local-fs.target postgresql.service memcached.service
 
 [Install]
 WantedBy=multi-user.target
@@ -943,7 +958,7 @@ fi
 
 if [[ $install_remote_event_receiver == "yes" ]]
 then
-cat << \EOF > /lib/systemd/system/pbx-remote-event-receiver.service
+cat << \EOF > /lib/systemd/system/pbx_remote_event_receiver.service
 ;;;;; Author: Adrian Fretwell <adrian@djangopbx.com>
 
 [Unit]
@@ -1175,11 +1190,13 @@ then
 fi
 if [[ $use_rabbitmq_broker == "yes" ]]
 then
-/usr/bin/systemctl enable pbx-event-receiver.service
+#  If more than one worker is required change {1..1} below.  Eg. {1..2} for two workers.
+/usr/bin/systemctl enable systemctl enable pbx_event_receiver@{1..1}.service
+/usr/bin/systemctl enable pbx_event_receiver.target
 fi
 if [[ $install_remote_event_receiver == "yes" ]]
 then
-/usr/bin/systemctl enable pbx-remote-event-receiver.service
+/usr/bin/systemctl enable pbx_remote_event_receiver.service
 fi
 
 echo -e $c_green
