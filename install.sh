@@ -722,6 +722,7 @@ else
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install regex'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install python-ipware'
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install pika'
+    sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && pip3 install paramiko'
 fi
 
 if [[ $install_djangopbx_local == "yes" ]]
