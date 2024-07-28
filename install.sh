@@ -629,12 +629,12 @@ WantedBy=multi-user.target
 EOF
  if [[ $install_postgresql_local == "no" ]]
  then
-    sed -i "s/postgresql.service //g" /lib/systemd/system/freeswitch.service
+    sed -i "s/\spostgresql.service//g" /lib/systemd/system/freeswitch.service
  fi
  if [[ $install_djangopbx_local == "no" ]]
  then
-    sed -i "s/nginx.service //g" /lib/systemd/system/freeswitch.service
-    sed -i "s/uwsgi.service //g" /lib/systemd/system/freeswitch.service
+    sed -i "s/\snginx.service//g" /lib/systemd/system/freeswitch.service
+    sed -i "s/\suwsgi.service//g" /lib/systemd/system/freeswitch.service
  fi
 
  if [[ $freeswitch_core_in_postgres == "no" ]]
