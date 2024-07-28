@@ -1227,7 +1227,7 @@ fi
 if [[ $use_rabbitmq_broker == "yes" ]]
 then
 #  If more than one worker is required change {1..1} below.  Eg. {1..2} for two workers.
-/usr/bin/systemctl enable systemctl enable pbx_event_receiver@{1..1}.service
+/usr/bin/systemctl enable pbx_event_receiver@{1..1}.service
 /usr/bin/systemctl enable pbx_event_receiver.target
 fi
 if [[ $install_remote_event_receiver == "yes" ]]
