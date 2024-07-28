@@ -367,6 +367,7 @@ then
     apt-get install -y freeswitch-music-default
     apt-get install -y freeswitch-mod-voicemail
     apt-get install -y freeswitch-mod-http-cache
+    apt-get install -y freeswitch-mod-amqp
     apt-get install -y libyuv-dev
 
     # remove the music package to protect music on hold from package updates
