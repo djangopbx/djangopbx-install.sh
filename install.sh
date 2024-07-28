@@ -909,6 +909,40 @@ then
     rabbitmqctl change_password guest $rabbitmq_password
     rabbitmqctl add_user djangopbx $rabbitmq_password
     rabbitmqctl set_permissions -p / "djangopbx" ".*" ".*" ".*"
+    mv /etc/rabbitmq/rabbitmq.conf /etc/rabbitmq/rabbitmq.conf.orig
+    cat << \EOF > /etc/rabbitmq/rabbitmq.conf
+## Core Settings
+listeners.tcp.default            = 5672
+
+## Default Users
+#
+default_user = guest
+default_pass = djangopbx-insecure
+loopback_users.guest = true
+
+## TLS configuration.
+#
+listeners.ssl.default            = 5671
+ssl_options.verify               = verify_peer
+ssl_options.fail_if_no_peer_cert = false
+# ssl_options.cacertfile           = /path/to/cacert.pem
+ssl_options.certfile             = /etc/ssl/certs/ssl-cert-snakeoil.pem
+ssl_options.keyfile              = /etc/ssl/private/ssl-cert-snakeoil.key
+
+## Management section
+#
+management.tcp.port       = 15672
+management.ssl.port       = 15671
+# management.ssl.cacertfile = /path/to/cacert.pem
+management.ssl.certfile   = /etc/ssl/certs/ssl-cert-snakeoil.pem
+management.ssl.keyfile    = /etc/ssl/private/ssl-cert-snakeoil.key
+
+## AHF - Core server variables for production
+vm_memory_high_watermark.relative = 0.6
+disk_free_limit.absolute = 8G
+log.file.level = warning
+
+EOF
 fi
 echo "RabbitMQ Password" >> /root/djangopbx-passwords.txt
 echo $rabbitmq_password >> /root/djangopbx-passwords.txt
