@@ -1032,6 +1032,7 @@ sed -i "s/#\sSESSION_COOKIE_AGE\s=\s3600/SESSION_COOKIE_AGE = 3600/g" /home/djan
 sed -i "s/#\sSESSION_EXPIRE_AT_BROWSER_CLOSE\s=\sTrue/SESSION_EXPIRE_AT_BROWSER_CLOSE = True/g" /home/django-pbx/pbx/pbx/settings.py
 sed -i "s/XXXXXXXX/${database_password}/g" /root/pbx-backup.sh
 sed -i "s/XXXXXXXX/${database_password}/g" /root/pbx-restore.sh
+sed -i "s/^PBX_FREESWITCHES\s=.*/PBX_FREESWITCHES = ['$HOSTNAME']/g" /home/django-pbx/pbx/pbx/settings.py
 
 if [[ $install_djangopbx_local == "yes" ]]
 then
@@ -1131,7 +1132,6 @@ then
  if [[ $REPLY =~ ^[Yy]$ ]]
  then
     sudo -u django-pbx bash -c 'source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py loaddata --app tenants defaultsetting.json'
-    sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updatedefaultsetting --category cluster --subcategory switch_name_1 --value $HOSTNAME"
     sudo -u django-pbx bash -c "source ~/envdpbx/bin/activate && cd /home/django-pbx/pbx && python3 manage.py updatedefaultsetting --category cluster --subcategory message_broker_password --value $rabbitmq_password"
  fi
 
