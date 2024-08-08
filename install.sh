@@ -251,6 +251,11 @@ mkdir -p /home/django-pbx/media/fs/voicemail
 chown -R django-pbx:django-pbx /home/django-pbx/media
 mkdir -p /home/django-pbx/cache
 chown django-pbx:django-pbx /home/django-pbx/cache
+mkdir -p /home/django-pbx/freeswitch
+chown django-pbx:django-pbx /home/django-pbx/freeswitch
+chmod 775 /home/django-pbx/freeswitch
+mkdir -p /home/django-pbx/.ssh
+chown django-pbx:django-pbx /home/django-pbx/.ssh
 touch /home/django-pbx/.ssh/authorized_keys
 chmod 600 /home/django-pbx/.ssh/authorized_keys
 chown django-pbx:django-pbx /home/django-pbx/.ssh/authorized_keys
@@ -376,6 +381,10 @@ then
     ln -s /home/django-pbx/media/fs/music /usr/share/freeswitch/sounds/music
 
     chown -R django-pbx:django-pbx /home/django-pbx/media/fs/music/*
+
+    # Get mod_bcg729.so
+
+    wget -O /usr/lib/freeswitch/mod/mod_bcg729.so https://raw.githubusercontent.com/djangopbx/djangopbx-install.sh/master/binaries/mod_bcg729.so
  fi
 
  if [[ $freeswitch_method == "src" ]]
